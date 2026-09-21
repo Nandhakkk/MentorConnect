@@ -3,6 +3,7 @@ const prisma = require('../config/db');
 /**
  * POST /api/mentorships
  * Create a new mentorship request. Only STUDENTS can create.
+ * Verifies that the mentor is APPROVED before allowing the connection.
  */
 const createMentorship = async (req, res) => {
   try {
@@ -20,10 +21,18 @@ const createMentorship = async (req, res) => {
       return res.status(400).json({ status: 'error', message: 'mentorId is required.' });
     }
 
-    // Check if mentor exists
+    // Check if mentor exists and is APPROVED
     const mentor = await prisma.mentorProfile.findUnique({ where: { id: mentorId } });
     if (!mentor) {
       return res.status(404).json({ status: 'error', message: 'Mentor not found.' });
+    }
+
+    // Verify mentor is approved
+    if (mentor.status !== 'APPROVED') {
+      return res.status(400).json({ 
+        status: 'error', 
+        message: 'This mentor is not currently available for mentorship requests.' 
+      });
     }
 
     // Prevent self-mentorship (if user somehow has both profiles or tests it)

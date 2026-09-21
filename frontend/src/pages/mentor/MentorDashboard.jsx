@@ -1,14 +1,64 @@
 import DashboardCard from '../../components/DashboardCard';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useState, useEffect } from 'react';
 import { fetchMentorMentorships } from '../../services/mentorService';
 
 export default function MentorDashboard() {
   const { user } = useAuth();
+  const mentorStatus = user?.profile?.status;
   const isAvailable = user?.profile?.isAvailable ?? true;
   const [mentorships, setMentorships] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Check mentor status - only APPROVED mentors can access the dashboard
+  if (mentorStatus === 'PENDING') {
+    return (
+      <div className="page-content">
+        <div className="glass-card" style={{ textAlign: 'center', padding: '3rem' }}>
+          <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>⏳</div>
+          <h2 style={{ color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Application Pending Review</h2>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
+            Your mentor application is currently under review by our admin team.
+            You will be notified once your application has been approved.
+          </p>
+          <div style={{ 
+            background: 'rgba(245, 158, 11, 0.1)', 
+            border: '1px solid rgba(245, 158, 11, 0.3)',
+            borderRadius: '8px',
+            padding: '1rem',
+            display: 'inline-block'
+          }}>
+            <span style={{ color: '#f59e0b', fontWeight: 600 }}>Current Status: PENDING</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (mentorStatus === 'REJECTED') {
+    return (
+      <div className="page-content">
+        <div className="glass-card" style={{ textAlign: 'center', padding: '3rem' }}>
+          <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>❌</div>
+          <h2 style={{ color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Mentor Application Rejected</h2>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
+            Unfortunately, your mentor application has not been approved.
+            Please contact support if you believe this is an error or have questions.
+          </p>
+          <div style={{ 
+            background: 'rgba(239, 68, 68, 0.1)', 
+            border: '1px solid rgba(239, 68, 68, 0.3)',
+            borderRadius: '8px',
+            padding: '1rem',
+            display: 'inline-block'
+          }}>
+            <span style={{ color: '#ef4444', fontWeight: 600 }}>Status: REJECTED</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   useEffect(() => {
     const load = async () => {

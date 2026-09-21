@@ -29,13 +29,29 @@ export async function fetchAdminUsers(role = 'ALL', search = '') {
   return data.users;
 }
 
-export async function fetchAdminMentors() {
-  const response = await fetch(`${API_BASE_URL}/admin/mentors`, {
+export async function fetchAdminMentors(status = 'ALL') {
+  let url = `${API_BASE_URL}/admin/mentors`;
+  if (status && status !== 'ALL') {
+    url += `?status=${encodeURIComponent(status)}`;
+  }
+  
+  const response = await fetch(url, {
     headers: getAuthHeaders(),
   });
   const data = await response.json();
   if (!response.ok) throw new Error(data.message || 'Failed to fetch mentors');
   return data.mentors;
+}
+
+export async function updateMentorStatus(mentorId, status) {
+  const response = await fetch(`${API_BASE_URL}/admin/mentors/${mentorId}/status`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ status })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to update mentor status');
+  return data.profile;
 }
 
 export async function fetchAdminMentorships(status = 'ALL') {

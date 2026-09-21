@@ -57,7 +57,7 @@ const updateMyProfile = async (req, res) => {
 
 /**
  * GET /api/mentors
- * Return available mentors (isAvailable = true).
+ * Return available mentors (isAvailable = true AND status = 'APPROVED').
  * Supports search and expertise query filters.
  */
 const getAvailableMentors = async (req, res) => {
@@ -66,6 +66,7 @@ const getAvailableMentors = async (req, res) => {
 
     const whereClause = {
       isAvailable: true,
+      status: 'APPROVED',  // Only show approved mentors
       user: { role: 'MENTOR' }
     };
 

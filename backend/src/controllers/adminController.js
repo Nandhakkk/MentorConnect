@@ -88,10 +88,17 @@ const getUsers = async (req, res) => {
 
 /**
  * GET /api/admin/mentors
- * Returns all mentor profiles.
+ * Returns all mentor profiles with optional status filtering.
  */
 const getMentors = async (req, res) => {
   try {
+    const { status } = req.query;
+    
+    let whereClause = {};
+    if (status && status !== 'ALL') {
+      whereClause.status = status;
+    }
+
     const mentors = await prisma.mentorProfile.findMany({
       include: {
         user: {
@@ -109,6 +116,52 @@ const getMentors = async (req, res) => {
     return res.status(200).json({ status: 'success', mentors });
   } catch (err) {
     return res.status(500).json({ status: 'error', message: 'Failed to fetch mentors.', details: err.message });
+  }
+};
+
+/**
+ * PUT /api/admin/mentors/:id/status
+ * Update a mentor's approval status (APPROVED or REJECTED).
+ * Only accessible by ADMIN role.
+ */
+const updateMentorStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    // Validate status value
+    const validStatuses = ['PENDING', 'APPROVED', 'REJECTED'];
+    if (!status || !validStatuses.includes(status)) {
+      return res.status(400).json({ 
+        status: 'error', 
+        message: `Invalid status. Must be one of: ${validStatuses.join(', ')}` 
+      });
+    }
+
+    // Find the mentor profile
+    const mentorProfile = await prisma.mentorProfile.findUnique({
+      where: { id },
+      include: { user: { select: { id: true, name: true, email: true } } }
+    });
+
+    if (!mentorProfile) {
+      return res.status(404).json({ status: 'error', message: 'Mentor profile not found.' });
+    }
+
+    // Update the status
+    const updatedProfile = await prisma.mentorProfile.update({
+      where: { id },
+      data: { status },
+      include: { user: { select: { id: true, name: true, email: true } } }
+    });
+
+    return res.status(200).json({ 
+      status: 'success', 
+      message: `Mentor status updated to ${status}.`,
+      profile: updatedProfile 
+    });
+  } catch (err) {
+    return res.status(500).json({ status: 'error', message: 'Failed to update mentor status.', details: err.message });
   }
 };
 
@@ -144,5 +197,6 @@ module.exports = {
   getDashboardStats,
   getUsers,
   getMentors,
+  updateMentorStatus,
   getMentorships
 };
