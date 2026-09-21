@@ -1,0 +1,212 @@
+// Prisma schema for MentorConnect – AI-Powered Goal-Based Mentoring Platform
+// Configured for PostgreSQL database
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// ENUMS
+// ==========================================
+
+enum Role {
+  STUDENT
+  MENTOR
+  ADMIN
+}
+
+enum GoalStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum MilestoneStatus {
+  PENDING
+  COMPLETED
+}
+
+enum MentorshipStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum SessionStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+enum MentorStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// ==========================================
+// MODELS
+// ==========================================
+
+/// Core User entity representing authenticated accounts
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(STUDENT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 1-to-1 optional profiles depending on user role
+  studentProfile StudentProfile?
+  mentorProfile  MentorProfile?
+
+  // Messages sent by this user across any mentorship
+  sentMessages   Message[]
+}
+
+/// Profile details specific to users with the STUDENT role
+model StudentProfile {
+  id         String   @id @default(uuid())
+  userId     String   @unique
+  bio        String?  @db.Text
+  education  String?
+  skills     String?  @db.Text
+  interests  String?  @db.Text
+  careerGoal String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relationships
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goals       Goal[]
+  mentorships Mentorship[]
+}
+
+/// Profile details specific to users with the MENTOR role
+model MentorProfile {
+  id          String       @id @default(uuid())
+  userId      String       @unique
+  bio         String?      @db.Text
+  expertise   String?      @db.Text
+  experience  Int?         // Experience in years
+  hourlyRate  Float?       // Hourly rate for mentoring sessions
+  isAvailable Boolean      @default(true)
+  status      MentorStatus @default(PENDING)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  // Relationships
+  user           User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mentorships    Mentorship[]
+  availabilities MentorAvailability[]
+}
+
+/// Goal set by a student to track mentorship progress
+model Goal {
+  id          String     @id @default(uuid())
+  studentId   String
+  title       String
+  description String?    @db.Text
+  status      GoalStatus @default(ACTIVE)
+  targetDate  DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  // Relationships
+  student    StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  milestones Milestone[]
+
+  @@index([studentId])
+}
+
+/// Actionable milestone or sub-task under a student's goal
+model Milestone {
+  id          String          @id @default(uuid())
+  goalId      String
+  title       String
+  description String?         @db.Text
+  status      MilestoneStatus @default(PENDING)
+  dueDate     DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  // Relationships
+  goal Goal @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  @@index([goalId])
+}
+
+/// Mentorship connection between a student and a mentor
+model Mentorship {
+  id        String           @id @default(uuid())
+  studentId String
+  mentorId  String
+  status    MentorshipStatus @default(ACTIVE)
+  startedAt DateTime?        @default(now())
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  // Relationships
+  student  StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  mentor   MentorProfile  @relation(fields: [mentorId], references: [id], onDelete: Cascade)
+  sessions Session[]
+  messages Message[]
+
+  @@index([studentId])
+  @@index([mentorId])
+}
+
+/// Mentoring session scheduled under an active mentorship
+model Session {
+  id           String        @id @default(uuid())
+  mentorshipId String
+  scheduledAt  DateTime
+  duration     Int           // Duration in minutes
+  status       SessionStatus @default(SCHEDULED)
+  meetingLink  String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  // Relationships
+  mentorship Mentorship @relation(fields: [mentorshipId], references: [id], onDelete: Cascade)
+
+  @@index([mentorshipId])
+}
+
+/// Chat message exchanged within a mentorship
+model Message {
+  id           String   @id @default(uuid())
+  senderId     String
+  mentorshipId String
+  content      String   @db.Text
+  createdAt    DateTime @default(now())
+
+  // Relationships
+  sender     User       @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  mentorship Mentorship @relation(fields: [mentorshipId], references: [id], onDelete: Cascade)
+
+  @@index([mentorshipId])
+  @@index([senderId])
+}
+
+/// Recurring availability schedule set by a mentor
+model MentorAvailability {
+  id        String  @id @default(uuid())
+  mentorId  String
+  dayOfWeek String  // e.g., "Monday", "Tuesday", etc.
+  startTime String  // e.g., "09:00"
+  endTime   String  // e.g., "17:00"
+  isActive  Boolean @default(true)
+
+  // Relationships
+  mentor MentorProfile @relation(fields: [mentorId], references: [id], onDelete: Cascade)
+
+  @@index([mentorId])
+}
