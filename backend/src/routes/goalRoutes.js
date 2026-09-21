@@ -3,6 +3,24 @@ const router = express.Router();
 const goalController = require('../controllers/goalController');
 const milestoneController = require('../controllers/milestoneController');
 const authMiddleware = require('../middleware/authMiddleware');
+const { validate } = require('../utils/validation');
+
+// Validation schemas for goals
+const goalCreateSchema = {
+  title: { required: true },
+  description: { required: false },
+  targetDate: { required: false, type: 'date' }
+};
+
+const goalUpdateSchema = {
+  title: { required: false },
+  description: { required: false },
+  targetDate: { required: false, type: 'date' },
+  status: { 
+    required: false, 
+    enum: ['ACTIVE', 'COMPLETED', 'CANCELLED'] 
+  }
+};
 
 // All routes require authentication
 router.use(authMiddleware.authenticateToken);
@@ -15,10 +33,10 @@ router.get('/', goalController.getGoals);
 router.get('/:id', goalController.getGoalById);
 
 // POST /api/goals
-router.post('/', goalController.createGoal);
+router.post('/', validate(goalCreateSchema), goalController.createGoal);
 
 // PUT /api/goals/:id
-router.put('/:id', goalController.updateGoal);
+router.put('/:id', validate(goalUpdateSchema), goalController.updateGoal);
 
 // DELETE /api/goals/:id
 router.delete('/:id', goalController.deleteGoal);
@@ -26,7 +44,7 @@ router.delete('/:id', goalController.deleteGoal);
 // --- Milestone Routes ---
 // Note: We mount the create route under goals so the goalId is part of the path
 // POST /api/goals/:goalId/milestones
-router.post('/:goalId/milestones', milestoneController.createMilestone);
+router.post('/:goalId/milestones', validate(milestoneCreateSchema), milestoneController.createMilestone);
 
 // PUT and DELETE milestones directly by ID
 // These could theoretically be mounted at /api/milestones in index.js,

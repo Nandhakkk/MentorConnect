@@ -15,53 +15,13 @@ const generateToken = (userId, role) => {
 /**
  * Register a new User (STUDENT or MENTOR)
  * POST /api/auth/register
+ * Validation handled by middleware
  */
 const register = async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
 
-    // 1. Validate required fields
-    if (!name || !email || !password || !role) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'All fields (name, email, password, role) are required.'
-      });
-    }
-
-    // 2. Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'Please provide a valid email address.'
-      });
-    }
-
-    // 3. Validate password length
-    if (password.length < 6) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'Password must be at least 6 characters long.'
-      });
-    }
-
-    // 4. Validate role (public registration allowed only for STUDENT and MENTOR)
-    const normalizedRole = role.toUpperCase();
-    if (normalizedRole === 'ADMIN') {
-      return res.status(400).json({
-        status: 'error',
-        message: 'Registration as ADMIN is not permitted.'
-      });
-    }
-
-    if (normalizedRole !== 'STUDENT' && normalizedRole !== 'MENTOR') {
-      return res.status(400).json({
-        status: 'error',
-        message: "Invalid role. Allowed roles for registration are 'STUDENT' and 'MENTOR'."
-      });
-    }
-
-    // 5. Check if user with this email already exists
+    // Check if user with this email already exists
     const existingUser = await prisma.user.findUnique({
       where: { email: email.toLowerCase().trim() }
     });
@@ -73,11 +33,13 @@ const register = async (req, res) => {
       });
     }
 
-    // 6. Hash password
+    // Hash password
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    // 7. Create User and corresponding profile in a single atomic transaction
+    const normalizedRole = role.toUpperCase();
+
+    // Create User and corresponding profile in a single atomic transaction
     const newUser = await prisma.user.create({
       data: {
         name: name.trim(),
@@ -86,7 +48,7 @@ const register = async (req, res) => {
         role: normalizedRole,
         // Automatically create associated profile
         ...(normalizedRole === 'STUDENT' ? { studentProfile: { create: {} } } : {}),
-        ...(normalizedRole === 'MENTOR' ? { mentorProfile: { create: {} } } : {})
+        ...(normalizedRole === 'MENTOR' ? { mentorProfile: { create: { status: 'PENDING' } } } : {})
       },
       include: {
         studentProfile: true,
@@ -94,10 +56,10 @@ const register = async (req, res) => {
       }
     });
 
-    // 8. Generate JWT token
+    // Generate JWT token
     const token = generateToken(newUser.id, newUser.role);
 
-    // 9. Format response (never expose password)
+    // Format response (never expose password)
     const userResponse = {
       id: newUser.id,
       name: newUser.name,
@@ -126,20 +88,13 @@ const register = async (req, res) => {
 /**
  * Login existing User
  * POST /api/auth/login
+ * Validation handled by middleware
  */
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // 1. Validate input presence
-    if (!email || !password) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'Both email and password are required.'
-      });
-    }
-
-    // 2. Find user by email (including student/mentor profile)
+    // Find user by email (including student/mentor profile)
     const user = await prisma.user.findUnique({
       where: { email: email.toLowerCase().trim() },
       include: {
@@ -155,7 +110,7 @@ const login = async (req, res) => {
       });
     }
 
-    // 3. Verify password with bcrypt
+    // Verify password with bcrypt
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
@@ -165,10 +120,10 @@ const login = async (req, res) => {
       });
     }
 
-    // 4. Generate JWT token
+    // Generate JWT token
     const token = generateToken(user.id, user.role);
 
-    // 5. Format response (never expose password)
+    // Format response (never expose password)
     const userResponse = {
       id: user.id,
       name: user.name,
