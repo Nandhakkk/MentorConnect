@@ -1,12 +1,28 @@
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-const icons = { Dashboard: '▦', Goals: '◎', 'Find Mentor': '⌕', 'My Mentors': '↔', Sessions: '◷', Messages: '□', Assignments: '▤', 'AI Assistant': '✦', Profile: '◉', Students: '♙', Availability: '◴', Users: '♧', Mentors: '♢', Mentorships: '⛓' };
+const icons = { Dashboard: '▦', Goals: '◎', 'Find Mentor': '⌕', 'My Mentors': '↔', Sessions: '◷', Messages: '□', Assignments: '▤', 'AI Assistant': '✦', Profile: '◉', Students: '♙', Availability: '◴', Users: '♧', Mentors: '♢', Mentorships: '⛓', 'Peer Mentor': '🎓' };
 
 export default function Sidebar() {
   const { user } = useAuth();
+  
+  // If user is STUDENT and has approved PEER mentor status, we could show 'Peer Dashboard'
+  // But for Phase 7A we just need 'Become a Peer Mentor' / 'Peer Mentor'
+  const isPeerMentor = user?.mentorProfile && user.mentorProfile.mentorType === 'PEER' && user.mentorProfile.status === 'APPROVED';
+
   const linksByRole = {
-    STUDENT: [['Dashboard', '/student/dashboard'], ['Goals', '/student/goals'], ['Find Mentor', '/student/mentor'], ['My Mentors', '/student/mentorships'], ['Sessions', '/student/sessions'], ['Assignments', '/student/assignments'], ['Messages', '/student/messages'], ['AI Assistant', '/student/ai'], ['Profile', '/student/profile']],
+    STUDENT: [
+      ['Dashboard', '/student/dashboard'], 
+      ['Goals', '/student/goals'], 
+      ['Find Mentor', '/student/mentor'], 
+      ['My Mentors', '/student/mentorships'], 
+      ['Sessions', '/student/sessions'], 
+      ['Assignments', '/student/assignments'], 
+      ['Messages', '/student/messages'], 
+      ['AI Assistant', '/student/ai'], 
+      ['Peer Mentor', '/student/peer-mentor/apply'],
+      ['Profile', '/student/profile']
+    ],
     MENTOR: [['Dashboard', '/mentor/dashboard'], ['Students', '/mentor/students'], ['Sessions', '/mentor/sessions'], ['Assignments', '/mentor/assignments'], ['Availability', '/mentor/availability'], ['Messages', '/mentor/messages'], ['Profile', '/mentor/profile']],
     ADMIN: [['Dashboard', '/admin/dashboard'], ['Users', '/admin/users'], ['Mentors', '/admin/mentors'], ['Mentorships', '/admin/mentorships']]
   };

@@ -105,17 +105,12 @@ const requireApprovedMentor = (req, res, next) => {
     });
   }
 
-  if (req.user.role !== 'MENTOR') {
-    return res.status(403).json({
-      status: 'error',
-      message: 'Forbidden: Only mentors can access this resource.'
-    });
-  }
-
+  // A user is an approved mentor if they have an approved mentor profile, 
+  // regardless of whether their role is MENTOR (Professional) or STUDENT (Peer).
   if (!req.user.mentorProfile || req.user.mentorProfile.status !== 'APPROVED') {
     return res.status(403).json({
       status: 'error',
-      message: 'Forbidden: Your mentor application is pending or rejected.'
+      message: 'Forbidden: You must be an approved mentor (Professional or Peer) to access this resource.'
     });
   }
 

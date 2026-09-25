@@ -33,6 +33,7 @@ import StudentAIAssistant from './pages/student/StudentAIAssistant';
 import AIMentorRecommendations from './pages/student/AIMentorRecommendations';
 import StudentProfileForm from './pages/student/StudentProfileForm';
 import StudentOnboarding from './pages/student/StudentOnboarding';
+import PeerMentorApplication from './pages/student/PeerMentorApplication';
 import MentorDashboard from './pages/mentor/MentorDashboard';
 import MentorProfileForm from './pages/mentor/MentorProfileForm';
 import MentorStudentsList from './pages/mentor/MentorStudentsList';
@@ -114,6 +115,7 @@ export default function App() {
             <Route path="ai-mentors" element={<AIMentorRecommendations />} />
             <Route path="profile" element={<StudentProfileForm />} />
             <Route path="onboarding" element={<StudentOnboarding />} />
+            <Route path="peer-mentor/apply" element={<PeerMentorApplication />} />
             <Route index element={<Navigate to="dashboard" replace />} />
           </Route>
 
