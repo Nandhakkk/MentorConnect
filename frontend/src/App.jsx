@@ -113,6 +113,7 @@ export default function App() {
             <Route path="dashboard" element={<MentorDashboard />} />
             <Route path="students" element={<MentorStudentsList />} />
             <Route path="sessions" element={<MentorSessions />} />
+            <Route path="sessions/:id/live" element={<LiveSession />} />
             <Route path="messages" element={<MentorMessages />} />
             <Route path="availability" element={<MentorAvailability />} />
             <Route path="profile" element={<MentorProfileForm />} />

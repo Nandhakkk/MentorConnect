@@ -1,4 +1,5 @@
 const prisma = require('../config/db');
+const notificationService = require('../services/notificationService');
 
 /**
  * Helper to get the day of the week from a date object
@@ -263,6 +264,30 @@ const cancelSession = async (req, res) => {
       where: { id },
       data: { status: 'CANCELLED' }
     });
+
+    const scheduledTime = new Date(session.scheduledAt).toLocaleString();
+
+    if (role === 'STUDENT') {
+      // Notify mentor
+      await notificationService.createNotification(
+        session.mentorship.mentor.userId,
+        'GENERAL',
+        'Session Cancelled',
+        `Your mentoring session with ${session.mentorship.student.user.name} scheduled for ${scheduledTime} has been cancelled.`,
+        session.id,
+        'SESSION'
+      );
+    } else if (role === 'MENTOR') {
+      // Notify student
+      await notificationService.createNotification(
+        session.mentorship.student.userId,
+        'GENERAL',
+        'Session Cancelled',
+        `Your mentoring session with ${session.mentorship.mentor.user.name} scheduled for ${scheduledTime} has been cancelled.`,
+        session.id,
+        'SESSION'
+      );
+    }
 
     return res.status(200).json({ status: 'success', message: 'Session cancelled.', session: updated });
   } catch (err) {

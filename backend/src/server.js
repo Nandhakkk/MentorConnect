@@ -2,6 +2,7 @@ const http = require('http');
 const app = require('./app');
 const { initializeSocket } = require('./sockets/socketManager');
 const logger = require('./utils/logger');
+const schedulerService = require('./services/schedulerService');
 
 const PORT = process.env.PORT || 5000;
 
@@ -10,6 +11,9 @@ const server = http.createServer(app);
 
 // Initialize Socket.IO
 initializeSocket(server);
+
+// Start background jobs
+schedulerService.startScheduler();
 
 // Start listening
 server.listen(PORT, () => {

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { fetchSessions, cancelSession, completeSession } from '../../services/sessionService';
 
 export default function MentorSessions() {
@@ -76,16 +77,27 @@ export default function MentorSessions() {
                   </div>
                   <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
                     <span>Duration: {session.duration} min</span>
-                    <span style={{ color: '#818cf8' }}>Meeting link will be available here</span>
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button onClick={() => handleCompleteSession(session.id)} style={{ background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)', padding: '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer' }}>
-                    Mark Complete
-                  </button>
-                  <button onClick={() => handleCancelSession(session.id)} style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', padding: '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer' }}>
-                    Cancel
-                  </button>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end' }}>
+                  {new Date() >= new Date(new Date(session.scheduledAt).getTime() - 10 * 60000) ? (
+                    <Link to={`/mentor/sessions/${session.id}/live`} className="btn btn-primary" style={{ padding: '0.5rem 1rem', textDecoration: 'none', textAlign: 'center', minWidth: '130px' }}>
+                      Join Session
+                    </Link>
+                  ) : (
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                      Available 10 mins before
+                    </span>
+                  )}
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button onClick={() => handleCompleteSession(session.id)} style={{ background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)', padding: '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer' }}>
+                      Mark Complete
+                    </button>
+                    <button onClick={() => handleCancelSession(session.id)} style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', padding: '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer' }}>
+                      Cancel
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}

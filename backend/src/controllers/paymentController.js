@@ -1,6 +1,7 @@
 const prisma = require('../config/db');
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
+const notificationService = require('../services/notificationService');
 
 const getRazorpayInstance = () => {
   if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
@@ -119,7 +120,7 @@ const verifyPayment = async (req, res) => {
     const meetingLink = session.meetingLink || `mentorconnect-session-${crypto.randomBytes(8).toString('hex')}`;
 
     // Mark as PAID
-    await prisma.$transaction([
+    const [updatedPayment, updatedSession] = await prisma.$transaction([
       prisma.payment.update({
         where: { id: session.payment.id },
         data: {
@@ -135,9 +136,47 @@ const verifyPayment = async (req, res) => {
         data: { 
           status: 'SCHEDULED',
           meetingLink: meetingLink
+        },
+        include: {
+          mentorship: {
+            include: {
+              mentor: { include: { user: true } },
+              student: { include: { user: true } }
+            }
+          }
         }
       })
     ]);
+
+    // Send Notifications
+    const scheduledTime = new Date(updatedSession.scheduledAt).toLocaleString();
+    
+    // Check if notification already exists to prevent duplicate (in case of retry)
+    const existingNotifications = await prisma.notification.findFirst({
+      where: { referenceId: session.id, type: 'PAYMENT' }
+    });
+
+    if (!existingNotifications) {
+      // Notify Learner
+      await notificationService.createNotification(
+        updatedSession.mentorship.student.userId,
+        'PAYMENT',
+        'Session Booked',
+        `Your mentoring session with ${updatedSession.mentorship.mentor.user.name} is confirmed for ${scheduledTime}.`,
+        session.id,
+        'SESSION'
+      );
+
+      // Notify Mentor
+      await notificationService.createNotification(
+        updatedSession.mentorship.mentor.userId,
+        'PAYMENT',
+        'New Session Booked',
+        `A mentoring session with ${updatedSession.mentorship.student.user.name} is confirmed for ${scheduledTime}.`,
+        session.id,
+        'SESSION'
+      );
+    }
 
     return res.status(200).json({ status: 'success', message: 'Payment verified and session scheduled' });
   } catch (err) {
