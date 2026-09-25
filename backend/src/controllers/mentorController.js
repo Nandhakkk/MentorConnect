@@ -135,7 +135,29 @@ const getAvailableMentors = async (req, res) => {
       }
     });
 
-    return res.status(200).json({ status: 'success', mentors });
+    const mentorIds = mentors.map(m => m.userId);
+    const reviews = await prisma.review.findMany({
+      where: { revieweeId: { in: mentorIds }, reviewerRole: 'STUDENT' },
+      select: { revieweeId: true, rating: true }
+    });
+
+    const mentorStats = {};
+    reviews.forEach(r => {
+      if (!mentorStats[r.revieweeId]) mentorStats[r.revieweeId] = { sum: 0, count: 0 };
+      mentorStats[r.revieweeId].sum += r.rating;
+      mentorStats[r.revieweeId].count += 1;
+    });
+
+    const mentorsWithStats = mentors.map(m => {
+      const stats = mentorStats[m.userId] || { sum: 0, count: 0 };
+      return {
+        ...m,
+        averageRating: stats.count > 0 ? (stats.sum / stats.count).toFixed(1) : 0,
+        reviewCount: stats.count
+      };
+    });
+
+    return res.status(200).json({ status: 'success', mentors: mentorsWithStats });
   } catch (err) {
     return res.status(500).json({ status: 'error', message: 'Failed to fetch mentors.', details: err.message });
   }
@@ -162,7 +184,15 @@ const getMentorById = async (req, res) => {
       return res.status(404).json({ status: 'error', message: 'Mentor not found.' });
     }
 
-    return res.status(200).json({ status: 'success', profile });
+    const reviews = await prisma.review.findMany({
+      where: { revieweeId: profile.userId, reviewerRole: 'STUDENT' },
+      select: { rating: true }
+    });
+    
+    const reviewCount = reviews.length;
+    const averageRating = reviewCount > 0 ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviewCount).toFixed(1) : 0;
+
+    return res.status(200).json({ status: 'success', profile: { ...profile, averageRating, reviewCount } });
   } catch (err) {
     return res.status(500).json({ status: 'error', message: 'Failed to fetch mentor details.', details: err.message });
   }

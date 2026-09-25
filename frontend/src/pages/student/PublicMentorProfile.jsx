@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchMentorById, createMentorship } from '../../services/mentorService';
+import { getMentorReviews } from '../../services/reviewService';
 import BackLink from '../../components/BackLink';
 import PageHeader from '../../components/PageHeader';
 
@@ -13,6 +14,7 @@ export default function PublicMentorProfile() {
   const [error, setError] = useState('');
   const [requesting, setRequesting] = useState(false);
   const [success, setSuccess] = useState('');
+  const [mentorStats, setMentorStats] = useState({ averageRating: 0, reviewCount: 0, recentReviews: [] });
 
   useEffect(() => {
     const loadMentor = async () => {
@@ -20,6 +22,14 @@ export default function PublicMentorProfile() {
         setLoading(true);
         const data = await fetchMentorById(id);
         setMentor(data);
+        
+        // Fetch reviews
+        try {
+          const stats = await getMentorReviews(data.id);
+          setMentorStats(stats);
+        } catch (e) {
+          console.error("Failed to fetch reviews", e);
+        }
       } catch (err) {
         setError(err.message);
       } finally {
@@ -62,7 +72,15 @@ export default function PublicMentorProfile() {
         </div>
         
         <h2 style={{ margin: '0 0 0.5rem 0', fontSize: '1.8rem', color: 'var(--text-primary)' }}>{mentor.user?.name}</h2>
-        <div style={{ color: 'var(--accent-primary)', fontSize: '1rem', fontWeight: 600, marginBottom: '1.5rem' }}>{mentor.expertise || 'General Mentor'}</div>
+        <div style={{ color: 'var(--accent-primary)', fontSize: '1rem', fontWeight: 600, marginBottom: '0.5rem' }}>{mentor.expertise || 'General Mentor'}</div>
+        
+        <div style={{ marginBottom: '1.5rem', fontSize: '1.1rem', color: '#eab308' }}>
+          {mentorStats.reviewCount > 0 ? (
+            <>★ {mentorStats.averageRating} <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>({mentorStats.reviewCount} reviews)</span></>
+          ) : (
+            <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>No ratings yet</span>
+          )}
+        </div>
 
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '2rem' }}>
           {mentor.topics?.map(t => (
@@ -110,11 +128,29 @@ export default function PublicMentorProfile() {
         </div>
 
         {mentor.bio && (
-          <div style={{ maxWidth: '600px', margin: '0 auto 2.5rem', textAlign: 'left' }}>
+          <div style={{ maxWidth: '600px', margin: '0 auto 2.5rem', textAlign: 'left', width: '100%' }}>
             <h3 style={{ fontSize: '1.1rem', marginBottom: '0.75rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.5rem' }}>About Me</h3>
             <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, fontSize: '0.95rem' }}>
               {mentor.bio}
             </p>
+          </div>
+        )}
+
+        {mentorStats.recentReviews && mentorStats.recentReviews.length > 0 && (
+          <div style={{ maxWidth: '600px', margin: '0 auto 2.5rem', textAlign: 'left', width: '100%' }}>
+            <h3 style={{ fontSize: '1.1rem', marginBottom: '0.75rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.5rem' }}>Recent Reviews</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {mentorStats.recentReviews.map(r => (
+                <div key={r.id} style={{ padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                    <span style={{ color: '#eab308' }}>{'★'.repeat(r.rating)}{'☆'.repeat(5-r.rating)}</span>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{new Date(r.createdAt).toLocaleDateString()}</span>
+                  </div>
+                  {r.comment && <p style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)', fontSize: '0.9rem', fontStyle: 'italic' }}>"{r.comment}"</p>}
+                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>— Student</div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 

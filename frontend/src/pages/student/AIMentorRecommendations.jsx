@@ -138,6 +138,13 @@ export default function AIMentorRecommendations() {
                       <div>
                         <h3 style={{ margin: 0, fontSize: '1.25rem' }}>{mentor.user.name}</h3>
                         <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{mentor.expertise}</div>
+                        <div style={{ marginTop: '0.25rem', fontSize: '0.85rem', color: '#eab308' }}>
+                          {mentor.reviewCount > 0 ? (
+                            <>★ {mentor.averageRating} <span style={{ color: 'var(--text-muted)' }}>({mentor.reviewCount} reviews)</span></>
+                          ) : (
+                            <span style={{ color: 'var(--text-muted)' }}>No ratings yet</span>
+                          )}
+                        </div>
                       </div>
                     </div>
 

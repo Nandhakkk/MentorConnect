@@ -23,6 +23,7 @@ import StudentMentors from './pages/student/StudentMentors';
 import BookSession from './pages/student/BookSession';
 import StudentSessions from './pages/student/StudentSessions';
 import LiveSession from './pages/student/LiveSession';
+import ReviewSession from './pages/student/ReviewSession';
 import StudentAssignments from './pages/student/StudentAssignments';
 import AssignmentDetails from './pages/student/AssignmentDetails';
 import StudentMessages from './pages/student/StudentMessages';
@@ -35,6 +36,7 @@ import MentorProfileForm from './pages/mentor/MentorProfileForm';
 import MentorStudentsList from './pages/mentor/MentorStudentsList';
 import MentorApplication from './pages/mentor/MentorApplication';
 import MentorSessions from './pages/mentor/MentorSessions';
+import ReviewStudent from './pages/mentor/ReviewStudent';
 import MentorAssignments from './pages/mentor/MentorAssignments';
 import CreateAssignment from './pages/mentor/CreateAssignment';
 import ReviewAssignment from './pages/mentor/ReviewAssignment';
@@ -98,6 +100,7 @@ export default function App() {
             <Route path="mentorships/:id/book" element={<BookSession />} />
             <Route path="sessions" element={<StudentSessions />} />
             <Route path="sessions/:id/live" element={<LiveSession />} />
+            <Route path="sessions/:id/review" element={<ReviewSession />} />
             <Route path="assignments" element={<StudentAssignments />} />
             <Route path="assignments/:id" element={<AssignmentDetails />} />
             <Route path="messages" element={<StudentMessages />} />
@@ -121,6 +124,7 @@ export default function App() {
             <Route path="students" element={<MentorStudentsList />} />
             <Route path="sessions" element={<MentorSessions />} />
             <Route path="sessions/:id/live" element={<LiveSession />} />
+            <Route path="sessions/:id/review" element={<ReviewStudent />} />
             <Route path="assignments" element={<MentorAssignments />} />
             <Route path="assignments/create" element={<CreateAssignment />} />
             <Route path="assignments/:id/review" element={<ReviewAssignment />} />

@@ -220,13 +220,20 @@ export default function StudentSessions() {
                     Mentor: {session.mentorship?.mentor?.user?.name} | {session.duration} min
                   </div>
                 </div>
-                <span style={{ 
-                  padding: '0.25rem 0.75rem', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold',
-                  background: session.status === 'COMPLETED' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
-                  color: session.status === 'COMPLETED' ? '#10b981' : '#ef4444'
-                }}>
-                  {session.status}
-                </span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end' }}>
+                  <span style={{ 
+                    padding: '0.25rem 0.75rem', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold',
+                    background: session.status === 'COMPLETED' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+                    color: session.status === 'COMPLETED' ? '#10b981' : '#ef4444'
+                  }}>
+                    {session.status}
+                  </span>
+                  {session.status === 'COMPLETED' && (
+                    <Link to={`/student/sessions/${session.id}/review`} style={{ fontSize: '0.85rem', color: 'var(--accent-primary)', textDecoration: 'underline' }}>
+                      Rate Session
+                    </Link>
+                  )}
+                </div>
               </div>
             ))}
           </div>
