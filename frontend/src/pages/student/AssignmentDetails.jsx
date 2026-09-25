@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getAssignment, submitAssignment } from '../../services/assignmentService';
+import { getAssignment, submitAssignment, getSecureFileUrl } from '../../services/assignmentService';
 import BackLink from '../../components/BackLink';
 
 export default function AssignmentDetails() {
@@ -13,6 +13,7 @@ export default function AssignmentDetails() {
   
   const [content, setContent] = useState('');
   const [resourceUrl, setResourceUrl] = useState('');
+  const [submissionFiles, setSubmissionFiles] = useState([]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -32,14 +33,39 @@ export default function AssignmentDetails() {
     e.preventDefault();
     try {
       setSubmitError('');
-      await submitAssignment(id, { content, resourceUrl });
+      
+      const payload = new FormData();
+      payload.append('content', content);
+      if (resourceUrl) payload.append('resourceUrl', resourceUrl);
+      
+      submissionFiles.forEach(file => {
+        payload.append('submissionFiles', file);
+      });
+
+      await submitAssignment(id, payload);
       // Reload
       const updated = await getAssignment(id);
       setAssignment(updated);
       setContent('');
       setResourceUrl('');
+      setSubmissionFiles([]);
     } catch (err) {
       setSubmitError(err.message);
+    }
+  };
+
+  const handleFileChange = (e) => {
+    if (e.target.files) {
+      setSubmissionFiles(Array.from(e.target.files));
+    }
+  };
+
+  const downloadFile = async (assetId) => {
+    try {
+      const data = await getSecureFileUrl(assetId);
+      window.open(data.url, '_blank');
+    } catch (err) {
+      alert(err.message);
     }
   };
 
@@ -79,6 +105,23 @@ export default function AssignmentDetails() {
               </a>
             </div>
           )}
+          {assignment.referenceFiles && assignment.referenceFiles.length > 0 && (
+            <div style={{ marginTop: '1rem' }}>
+              <h5 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-secondary)' }}>Reference Files:</h5>
+              <ul style={{ margin: 0, paddingLeft: '1.5rem', color: 'white' }}>
+                {assignment.referenceFiles.map(f => (
+                  <li key={f.id} style={{ marginBottom: '0.25rem' }}>
+                    <button onClick={() => downloadFile(f.id)} style={{ background: 'none', border: 'none', color: '#6366f1', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>
+                      {f.originalName}
+                    </button>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginLeft: '0.5rem' }}>
+                      ({(f.size / 1024 / 1024).toFixed(2)} MB)
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
         
         {latestSubmission && assignment.status !== 'ASSIGNED' && (
@@ -92,6 +135,22 @@ export default function AssignmentDetails() {
                 </a>
               </div>
             )}
+            
+            {latestSubmission.submissionFiles && latestSubmission.submissionFiles.length > 0 && (
+              <div style={{ marginBottom: '1rem' }}>
+                <h5 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-secondary)' }}>Attached Files:</h5>
+                <ul style={{ margin: 0, paddingLeft: '1.5rem', color: 'white' }}>
+                  {latestSubmission.submissionFiles.map(f => (
+                    <li key={f.id} style={{ marginBottom: '0.25rem' }}>
+                      <button onClick={() => downloadFile(f.id)} style={{ background: 'none', border: 'none', color: '#6366f1', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>
+                        {f.originalName}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
               Submitted at: {new Date(latestSubmission.submittedAt).toLocaleString()} ({latestSubmission.status})
             </div>
@@ -121,14 +180,20 @@ export default function AssignmentDetails() {
                 ></textarea>
               </div>
               <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Resource URL (Optional)</label>
+                <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Upload Your Work (Optional, Max 5)</label>
                 <input 
-                  type="url"
-                  value={resourceUrl}
-                  onChange={e => setResourceUrl(e.target.value)}
-                  style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
-                  placeholder="https://github.com/..."
+                  type="file"
+                  multiple
+                  onChange={handleFileChange}
+                  style={{ color: 'white' }}
                 />
+                {submissionFiles.length > 0 && (
+                  <ul style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '0.5rem', paddingLeft: '1.5rem' }}>
+                    {submissionFiles.map((f, i) => (
+                      <li key={i}>{f.name} ({(f.size / 1024 / 1024).toFixed(2)} MB)</li>
+                    ))}
+                  </ul>
+                )}
               </div>
               {submitError && <div style={{ color: '#ef4444' }}>{submitError}</div>}
               <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start' }}>

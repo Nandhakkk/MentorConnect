@@ -17,6 +17,7 @@ export default function CreateAssignment() {
     dueDate: '',
     resourceUrl: ''
   });
+  const [referenceFiles, setReferenceFiles] = useState([]);
 
   useEffect(() => {
     const loadSessions = async () => {
@@ -41,10 +42,24 @@ export default function CreateAssignment() {
     e.preventDefault();
     try {
       setError('');
-      await createAssignment(formData);
+      
+      const payload = new FormData();
+      Object.keys(formData).forEach(key => payload.append(key, formData[key]));
+      
+      referenceFiles.forEach(file => {
+        payload.append('referenceFiles', file);
+      });
+
+      await createAssignment(payload);
       navigate('/mentor/assignments');
     } catch (err) {
       setError(err.message);
+    }
+  };
+
+  const handleFileChange = (e) => {
+    if (e.target.files) {
+      setReferenceFiles(Array.from(e.target.files));
     }
   };
 
@@ -116,6 +131,22 @@ export default function CreateAssignment() {
                 style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
                 placeholder="https://example.com/resource"
               />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Reference Files (Optional, Max 5)</label>
+              <input 
+                type="file"
+                multiple
+                onChange={handleFileChange}
+                style={{ color: 'white' }}
+              />
+              {referenceFiles.length > 0 && (
+                <ul style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '0.5rem', paddingLeft: '1.5rem' }}>
+                  {referenceFiles.map((f, i) => (
+                    <li key={i}>{f.name} ({(f.size / 1024 / 1024).toFixed(2)} MB)</li>
+                  ))}
+                </ul>
+              )}
             </div>
             
             {error && <div style={{ color: '#ef4444' }}>{error}</div>}

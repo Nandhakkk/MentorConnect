@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getAssignment, reviewAssignment } from '../../services/assignmentService';
+import { getAssignment, reviewAssignment, getSecureFileUrl } from '../../services/assignmentService';
 import BackLink from '../../components/BackLink';
 
 export default function ReviewAssignment() {
@@ -41,6 +41,15 @@ export default function ReviewAssignment() {
     }
   };
 
+  const downloadFile = async (assetId) => {
+    try {
+      const data = await getSecureFileUrl(assetId);
+      window.open(data.url, '_blank');
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
   if (loading) return <div className="page-content">Loading...</div>;
   if (error || !assignment) return <div className="page-content" style={{ color: '#ef4444' }}>{error || 'Not found'}</div>;
 
@@ -69,6 +78,24 @@ export default function ReviewAssignment() {
         <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1.5rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
           <h4 style={{ margin: '0 0 1rem 0', color: 'var(--text-muted)' }}>Original Instructions</h4>
           <p style={{ margin: 0, whiteSpace: 'pre-wrap', color: 'var(--text-secondary)' }}>{assignment.description}</p>
+          
+          {assignment.referenceFiles && assignment.referenceFiles.length > 0 && (
+            <div style={{ marginTop: '1rem' }}>
+              <h5 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-secondary)' }}>Reference Files:</h5>
+              <ul style={{ margin: 0, paddingLeft: '1.5rem', color: 'white' }}>
+                {assignment.referenceFiles.map(f => (
+                  <li key={f.id} style={{ marginBottom: '0.25rem' }}>
+                    <button onClick={() => downloadFile(f.id)} style={{ background: 'none', border: 'none', color: '#6366f1', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>
+                      {f.originalName}
+                    </button>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginLeft: '0.5rem' }}>
+                      ({(f.size / 1024 / 1024).toFixed(2)} MB)
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
         
         {latestSubmission ? (
@@ -82,6 +109,22 @@ export default function ReviewAssignment() {
                 </a>
               </div>
             )}
+            
+            {latestSubmission.submissionFiles && latestSubmission.submissionFiles.length > 0 && (
+              <div style={{ marginBottom: '1rem' }}>
+                <h5 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-secondary)' }}>Attached Files:</h5>
+                <ul style={{ margin: 0, paddingLeft: '1.5rem', color: 'white' }}>
+                  {latestSubmission.submissionFiles.map(f => (
+                    <li key={f.id} style={{ marginBottom: '0.25rem' }}>
+                      <button onClick={() => downloadFile(f.id)} style={{ background: 'none', border: 'none', color: '#6366f1', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>
+                        {f.originalName}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
               Submitted at: {new Date(latestSubmission.submittedAt).toLocaleString()} 
               {latestSubmission.status === 'LATE' && <span style={{ color: '#ef4444', marginLeft: '0.5rem' }}>(LATE)</span>}

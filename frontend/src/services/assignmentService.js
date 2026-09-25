@@ -9,10 +9,14 @@ const getAuthHeaders = () => {
 };
 
 export async function createAssignment(data) {
+  const isFormData = data instanceof FormData;
+  const headers = getAuthHeaders();
+  if (isFormData) delete headers['Content-Type']; // Let browser set boundary
+
   const response = await fetch(`${API_BASE_URL}/assignments`, {
     method: 'POST',
-    headers: getAuthHeaders(),
-    body: JSON.stringify(data)
+    headers,
+    body: isFormData ? data : JSON.stringify(data)
   });
   const result = await response.json();
   if (!response.ok) throw new Error(result.message || 'Failed to create assignment');
@@ -47,10 +51,14 @@ export async function getAssignment(id) {
 }
 
 export async function submitAssignment(id, data) {
+  const isFormData = data instanceof FormData;
+  const headers = getAuthHeaders();
+  if (isFormData) delete headers['Content-Type'];
+
   const response = await fetch(`${API_BASE_URL}/assignments/${id}/submission`, {
     method: 'POST',
-    headers: getAuthHeaders(),
-    body: JSON.stringify(data)
+    headers,
+    body: isFormData ? data : JSON.stringify(data)
   });
   const result = await response.json();
   if (!response.ok) throw new Error(result.message || 'Failed to submit assignment');
@@ -66,4 +74,13 @@ export async function reviewAssignment(id, data) {
   const result = await response.json();
   if (!response.ok) throw new Error(result.message || 'Failed to review assignment');
   return result;
+}
+
+export async function getSecureFileUrl(assetId) {
+  const response = await fetch(`${API_BASE_URL}/assignments/files/${assetId}`, {
+    headers: getAuthHeaders()
+  });
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.message || 'Failed to fetch secure file URL');
+  return result.data; // { url, filename, mimeType }
 }

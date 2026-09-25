@@ -1,5 +1,6 @@
 const prisma = require('../config/db');
 const notificationService = require('../services/notificationService');
+const fileService = require('../services/fileService');
 
 /**
  * CREATE ASSIGNMENT
@@ -57,11 +58,25 @@ const createAssignment = async (req, res) => {
         studentId: session.mentorship.studentId,
         title,
         description,
-        instructions: resourceUrl || null, // Storing resource URL in instructions if we don't have a dedicated field, though schema has instructions. Let's use instructions to store resourceUrl.
+        instructions: resourceUrl || null,
         dueDate: dueDateObj,
         status: 'ASSIGNED'
       }
     });
+
+    if (req.files && req.files.length > 0) {
+      try {
+        await fileService.processUploads(
+          req.files,
+          mentorUserId,
+          `mentorconnect/assignments/references/${assignment.id}`,
+          'ASSIGNMENT_REF',
+          assignment.id
+        );
+      } catch (err) {
+        console.error("Cloudinary Ref Upload Error:", err.message);
+      }
+    }
 
     // Notify Student
     await notificationService.createNotification(
@@ -183,6 +198,15 @@ const getAssignmentDetails = async (req, res) => {
       return res.status(403).json({ status: 'error', message: 'Not authorized' });
     }
 
+    // Attach reference files
+    const refFiles = await fileService.getFilesForEntity('ASSIGNMENT_REF', assignment.id);
+    assignment.referenceFiles = refFiles;
+
+    // Attach submission files
+    for (let sub of assignment.submissions) {
+      sub.submissionFiles = await fileService.getFilesForEntity('SUBMISSION_FILE', sub.id);
+    }
+
     return res.status(200).json({ status: 'success', data: assignment });
   } catch (err) {
     return res.status(500).json({ status: 'error', message: err.message });
@@ -231,12 +255,15 @@ const submitAssignment = async (req, res) => {
 
     const submissionStatus = isLate ? 'LATE' : 'SUBMITTED';
 
+    // Handle File replacements if returning
+    const oldSub = assignment.submissions.length > 0 ? assignment.submissions[0] : null;
+    
     const submission = await prisma.$transaction(async (tx) => {
       const sub = await tx.assignmentSubmission.create({
         data: {
           assignmentId: id,
           studentId: assignment.studentId,
-          content,
+          content: content || 'No text content', // Allow empty text if files exist, though validation requires it
           fileReference: resourceUrl || null,
           status: submissionStatus
         }
@@ -249,6 +276,20 @@ const submitAssignment = async (req, res) => {
 
       return sub;
     });
+
+    if (req.files && req.files.length > 0) {
+      try {
+        await fileService.processUploads(
+          req.files,
+          studentUserId,
+          `mentorconnect/assignments/submissions/${submission.id}`,
+          'SUBMISSION_FILE',
+          submission.id
+        );
+      } catch (err) {
+        console.error("Cloudinary Sub Upload Error:", err.message);
+      }
+    }
 
     // Notify mentor
     await notificationService.createNotification(
@@ -347,11 +388,59 @@ const reviewAssignment = async (req, res) => {
   }
 };
 
+/**
+ * DOWNLOAD SECURE FILE
+ * GET /api/assignments/files/:assetId
+ */
+const downloadFile = async (req, res) => {
+  try {
+    const { assetId } = req.params;
+    const userId = req.user.id;
+    const userRole = req.user.role;
+
+    const fileAsset = await prisma.fileAsset.findUnique({ where: { id: assetId } });
+    if (!fileAsset) return res.status(404).json({ status: 'error', message: 'File not found' });
+
+    const [category, entityId] = fileAsset.category.split(':');
+    
+    // Verify Access
+    if (category === 'ASSIGNMENT_REF') {
+      const assignment = await prisma.assignment.findUnique({
+        where: { id: entityId },
+        include: { mentor: true, student: true }
+      });
+      if (!assignment) return res.status(404).json({ status: 'error', message: 'Assignment not found' });
+      
+      if (userRole === 'STUDENT' && assignment.student.userId !== userId) return res.status(403).json({ status: 'error', message: 'Not authorized' });
+      if (userRole === 'MENTOR' && assignment.mentor.userId !== userId) return res.status(403).json({ status: 'error', message: 'Not authorized' });
+    } else if (category === 'SUBMISSION_FILE') {
+      const submission = await prisma.assignmentSubmission.findUnique({
+        where: { id: entityId },
+        include: { assignment: { include: { mentor: true, student: true } } }
+      });
+      if (!submission) return res.status(404).json({ status: 'error', message: 'Submission not found' });
+
+      if (userRole === 'STUDENT' && submission.assignment.student.userId !== userId) return res.status(403).json({ status: 'error', message: 'Not authorized' });
+      if (userRole === 'MENTOR' && submission.assignment.mentor.userId !== userId) return res.status(403).json({ status: 'error', message: 'Not authorized' });
+    } else {
+      return res.status(403).json({ status: 'error', message: 'Invalid file category access' });
+    }
+
+    const secureUrl = fileService.generateSecureUrl(fileAsset.storageKey);
+    if (!secureUrl) return res.status(500).json({ status: 'error', message: 'Cloudinary not configured' });
+
+    return res.status(200).json({ status: 'success', data: { url: secureUrl, filename: fileAsset.originalName, mimeType: fileAsset.mimeType } });
+  } catch (err) {
+    return res.status(500).json({ status: 'error', message: err.message });
+  }
+};
+
 module.exports = {
   createAssignment,
   getMentorAssignments,
   getStudentAssignments,
   getAssignmentDetails,
   submitAssignment,
-  reviewAssignment
+  reviewAssignment,
+  downloadFile
 };
