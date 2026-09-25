@@ -24,6 +24,7 @@ import StudentSessions from './pages/student/StudentSessions';
 import StudentMessages from './pages/student/StudentMessages';
 import StudentAIAssistant from './pages/student/StudentAIAssistant';
 import StudentProfileForm from './pages/student/StudentProfileForm';
+import StudentOnboarding from './pages/student/StudentOnboarding';
 import MentorDashboard from './pages/mentor/MentorDashboard';
 import MentorProfileForm from './pages/mentor/MentorProfileForm';
 import MentorStudentsList from './pages/mentor/MentorStudentsList';
@@ -34,6 +35,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminMentors from './pages/admin/AdminMentors';
 import AdminMentorships from './pages/admin/AdminMentorships';
+import GuardianDashboard from './pages/guardian/GuardianDashboard';
 
 // Placeholder pages for upcoming features
 // (None currently required)
@@ -43,9 +45,15 @@ function RootRedirect() {
   const { user, loading } = useAuth();
   if (loading) return null;
   if (!user) return <Navigate to="/login" replace />;
-  if (user.role === 'STUDENT') return <Navigate to="/student/dashboard" replace />;
+  if (user.role === 'STUDENT') {
+    if (user.studentProfile && !user.studentProfile.onboardingCompleted) {
+      return <Navigate to="/student/onboarding" replace />;
+    }
+    return <Navigate to="/student/dashboard" replace />;
+  }
   if (user.role === 'MENTOR') return <Navigate to="/mentor/dashboard" replace />;
   if (user.role === 'ADMIN') return <Navigate to="/admin/dashboard" replace />;
+  if (user.role === 'GUARDIAN') return <Navigate to="/guardian/dashboard" replace />;
   return <Navigate to="/login" replace />;
 }
 
@@ -80,6 +88,7 @@ export default function App() {
             <Route path="messages" element={<StudentMessages />} />
             <Route path="ai" element={<StudentAIAssistant />} />
             <Route path="profile" element={<StudentProfileForm />} />
+            <Route path="onboarding" element={<StudentOnboarding />} />
             <Route index element={<Navigate to="dashboard" replace />} />
           </Route>
 
@@ -114,6 +123,19 @@ export default function App() {
             <Route path="users" element={<AdminUsers />} />
             <Route path="mentors" element={<AdminMentors />} />
             <Route path="mentorships" element={<AdminMentorships />} />
+            <Route index element={<Navigate to="dashboard" replace />} />
+          </Route>
+
+          {/* ─── GUARDIAN Routes ─── */}
+          <Route
+            path="/guardian"
+            element={
+              <RoleRoute allowedRoles={['GUARDIAN']}>
+                <DashboardLayout title="Guardian Dashboard" />
+              </RoleRoute>
+            }
+          >
+            <Route path="dashboard" element={<GuardianDashboard />} />
             <Route index element={<Navigate to="dashboard" replace />} />
           </Route>
 

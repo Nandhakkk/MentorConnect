@@ -1,4 +1,4 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export const getDashboardForRole = (role) => {
@@ -9,6 +9,8 @@ export const getDashboardForRole = (role) => {
       return '/mentor/dashboard';
     case 'ADMIN':
       return '/admin/dashboard';
+    case 'GUARDIAN':
+      return '/guardian/dashboard';
     default:
       return '/login';
   }
@@ -44,6 +46,19 @@ export default function RoleRoute({ allowedRoles, children }) {
   // Unauthorized role -> redirect to their own dashboard
   if (!allowedRoles.includes(user.role)) {
     return <Navigate to={getDashboardForRole(user.role)} replace />;
+  }
+
+  // Student onboarding check
+  const location = useLocation();
+  if (user.role === 'STUDENT' && user.studentProfile && !user.studentProfile.onboardingCompleted) {
+    if (location.pathname !== '/student/onboarding') {
+      return <Navigate to="/student/onboarding" replace />;
+    }
+  } else if (user.role === 'STUDENT' && user.studentProfile?.onboardingCompleted) {
+    // If completed but trying to access onboarding, send to dashboard
+    if (location.pathname === '/student/onboarding') {
+      return <Navigate to="/student/dashboard" replace />;
+    }
   }
 
   return children;

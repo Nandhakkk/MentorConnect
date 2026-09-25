@@ -7,11 +7,11 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 /**
  * Register a new user
  */
-export async function registerUser(name, email, password, role) {
+export async function registerUser(name, email, password, role, dateOfBirth) {
   const response = await fetch(`${API_BASE_URL}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, email, password, role })
+    body: JSON.stringify({ name, email, password, role, dateOfBirth })
   });
 
   const data = await response.json();

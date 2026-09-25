@@ -7,5 +7,7 @@ router.use(authMiddleware.authenticateToken);
 
 router.get('/me', authMiddleware.requireRole('STUDENT'), studentController.getMyProfile);
 router.put('/me', authMiddleware.requireRole('STUDENT'), studentController.updateMyProfile);
+router.put('/onboarding', authMiddleware.requireRole('STUDENT'), studentController.completeOnboarding);
+router.post('/link-guardian', authMiddleware.requireRole('STUDENT'), studentController.linkGuardian);
 
 module.exports = router;

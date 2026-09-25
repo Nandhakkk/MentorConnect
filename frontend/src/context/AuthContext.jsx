@@ -38,8 +38,8 @@ export const AuthProvider = ({ children }) => {
     return res.user;
   };
 
-  const register = async (name, email, password, role) => {
-    const res = await registerUser(name, email, password, role);
+  const register = async (name, email, password, role, dateOfBirth) => {
+    const res = await registerUser(name, email, password, role, dateOfBirth);
     localStorage.setItem('mentorconnect_token', res.token);
     setToken(res.token);
     setUser(res.user);

@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const prisma = require('../config/db');
+const { validateDateOfBirth } = require('../utils/ageHelper');
 
 /**
  * Helper to generate a JWT token
@@ -18,7 +19,7 @@ const generateToken = (userId, role) => {
  */
 const register = async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, dateOfBirth } = req.body;
 
     // 1. Validate required fields
     if (!name || !email || !password || !role) {
@@ -26,6 +27,17 @@ const register = async (req, res) => {
         status: 'error',
         message: 'All fields (name, email, password, role) are required.'
       });
+    }
+
+    let parsedDob = null;
+    if (role === 'STUDENT' || dateOfBirth) {
+      parsedDob = validateDateOfBirth(dateOfBirth);
+      if (!parsedDob) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Valid Date of Birth is required and cannot be in the future.'
+        });
+      }
     }
 
     // 2. Validate email format
@@ -54,10 +66,10 @@ const register = async (req, res) => {
       });
     }
 
-    if (normalizedRole !== 'STUDENT' && normalizedRole !== 'MENTOR') {
+    if (normalizedRole !== 'STUDENT' && normalizedRole !== 'MENTOR' && normalizedRole !== 'GUARDIAN') {
       return res.status(400).json({
         status: 'error',
-        message: "Invalid role. Allowed roles for registration are 'STUDENT' and 'MENTOR'."
+        message: "Invalid role. Allowed roles for registration are 'STUDENT', 'MENTOR', and 'GUARDIAN'."
       });
     }
 
@@ -84,6 +96,7 @@ const register = async (req, res) => {
         email: email.toLowerCase().trim(),
         password: hashedPassword,
         role: normalizedRole,
+        dateOfBirth: parsedDob,
         // Automatically create associated profile
         ...(normalizedRole === 'STUDENT' ? { studentProfile: { create: {} } } : {}),
         ...(normalizedRole === 'MENTOR' ? { mentorProfile: { create: {} } } : {})
@@ -103,7 +116,8 @@ const register = async (req, res) => {
       name: newUser.name,
       email: newUser.email,
       role: newUser.role,
-      profile: normalizedRole === 'STUDENT' ? newUser.studentProfile : newUser.mentorProfile,
+      studentProfile: newUser.studentProfile || null,
+      mentorProfile: newUser.mentorProfile || null,
       createdAt: newUser.createdAt
     };
 
@@ -174,7 +188,8 @@ const login = async (req, res) => {
       name: user.name,
       email: user.email,
       role: user.role,
-      profile: user.role === 'STUDENT' ? user.studentProfile : user.mentorProfile,
+      studentProfile: user.studentProfile || null,
+      mentorProfile: user.mentorProfile || null,
       createdAt: user.createdAt
     };
 
@@ -208,7 +223,8 @@ const getCurrentUser = async (req, res) => {
       name: user.name,
       email: user.email,
       role: user.role,
-      profile: user.role === 'STUDENT' ? user.studentProfile : user.mentorProfile,
+      studentProfile: user.studentProfile || null,
+      mentorProfile: user.mentorProfile || null,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt
     };

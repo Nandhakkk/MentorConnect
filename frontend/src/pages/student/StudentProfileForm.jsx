@@ -1,6 +1,19 @@
 import { useState, useEffect } from 'react';
 import { fetchMyStudentProfile, updateMyStudentProfile } from '../../services/studentService';
+import { linkGuardian } from '../../services/guardianService';
 import { useAuth } from '../../context/AuthContext';
+
+const isMinor = (dobString) => {
+  if (!dobString) return false;
+  const dob = new Date(dobString);
+  const today = new Date();
+  let age = today.getFullYear() - dob.getFullYear();
+  const m = today.getMonth() - dob.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+    age--;
+  }
+  return age < 18;
+};
 
 export default function StudentProfileForm() {
   const { user } = useAuth();
@@ -15,6 +28,12 @@ export default function StudentProfileForm() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+
+  const [guardianEmail, setGuardianEmail] = useState('');
+  const [relationship, setRelationship] = useState('');
+  const [linking, setLinking] = useState(false);
+  const [linkMsg, setLinkMsg] = useState('');
+  const [linkErr, setLinkErr] = useState('');
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -49,6 +68,26 @@ export default function StudentProfileForm() {
       setError(err.message);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleLinkGuardian = async (e) => {
+    e.preventDefault();
+    try {
+      setLinking(true);
+      setLinkMsg('');
+      setLinkErr('');
+      const { token } = useAuth(); // Actually better to get token directly from useAuth if exposed, wait we don't have token exposed in useAuth here?
+      // Wait, let's just get it from localStorage or authContext.
+      const authToken = localStorage.getItem('mentorconnect_token');
+      await linkGuardian(guardianEmail, relationship, authToken);
+      setLinkMsg('Guardian linked successfully.');
+      setGuardianEmail('');
+      setRelationship('');
+    } catch (err) {
+      setLinkErr(err.message);
+    } finally {
+      setLinking(false);
     }
   };
 
@@ -150,6 +189,51 @@ export default function StudentProfileForm() {
           </button>
         </form>
       </div>
+
+      {isMinor(user?.dateOfBirth) && (
+        <div className="glass-card" style={{ maxWidth: '600px', padding: '2rem', marginTop: '2rem' }}>
+          <h3 style={{ marginBottom: '1rem' }}>Link Guardian</h3>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+            As a minor, you can link a parent or guardian to your account so they can monitor your progress and sessions.
+          </p>
+          <form onSubmit={handleLinkGuardian}>
+            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Guardian Email</label>
+                <input 
+                  type="email" 
+                  required
+                  value={guardianEmail} 
+                  onChange={e => setGuardianEmail(e.target.value)}
+                  placeholder="e.g. parent@example.com"
+                  style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
+                />
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Relationship</label>
+                <select 
+                  required
+                  value={relationship}
+                  onChange={e => setRelationship(e.target.value)}
+                  style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
+                >
+                  <option value="">Select...</option>
+                  <option value="Parent">Parent</option>
+                  <option value="Legal Guardian">Legal Guardian</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+            </div>
+
+            {linkMsg && <div style={{ color: '#10b981', marginBottom: '1rem', fontWeight: 'bold' }}>{linkMsg}</div>}
+            {linkErr && <div style={{ color: '#ef4444', marginBottom: '1rem' }}>{linkErr}</div>}
+
+            <button type="submit" className="btn btn-secondary" disabled={linking} style={{ padding: '0.75rem 2rem' }}>
+              {linking ? 'Linking...' : 'Send Link Request'}
+            </button>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

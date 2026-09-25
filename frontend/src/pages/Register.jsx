@@ -7,6 +7,7 @@ export default function Register() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
   const [role, setRole] = useState('STUDENT'); // 'STUDENT' or 'MENTOR'
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -23,6 +24,11 @@ export default function Register() {
       return;
     }
 
+    if (role === 'STUDENT' && !dateOfBirth) {
+      setError('Date of birth is required for students.');
+      return;
+    }
+
     if (password.length < 6) {
       setError('Password must be at least 6 characters long.');
       return;
@@ -30,7 +36,7 @@ export default function Register() {
 
     setSubmitting(true);
     try {
-      const regUser = await register(name, email, password, role);
+      const regUser = await register(name, email, password, role, dateOfBirth || undefined);
       navigate(getDashboardForRole(regUser.role));
     } catch (err) {
       setError(err.message || 'Registration failed. Please try again.');
@@ -130,6 +136,24 @@ export default function Register() {
               id="register-password"
             />
           </div>
+
+          {role === 'STUDENT' && (
+            <div>
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem', color: 'var(--text-primary)' }}>
+                Date of Birth
+              </label>
+              <input
+                type="date"
+                className="form-input"
+                value={dateOfBirth}
+                onChange={(e) => setDateOfBirth(e.target.value)}
+                required
+                disabled={submitting}
+                max={new Date().toISOString().split("T")[0]}
+                id="register-dob"
+              />
+            </div>
+          )}
 
           <div>
             <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem', color: 'var(--text-primary)' }}>

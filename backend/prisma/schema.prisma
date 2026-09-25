@@ -18,6 +18,7 @@ enum Role {
   STUDENT
   MENTOR
   ADMIN
+  GUARDIAN
 }
 
 enum GoalStatus {
@@ -50,17 +51,116 @@ enum MentorStatus {
   REJECTED
 }
 
+enum MentorType {
+  PROFESSIONAL
+  PEER
+}
+
+enum PaymentStatus {
+  CREATED
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+enum PayoutStatus {
+  PENDING
+  ELIGIBLE
+  PROCESSING
+  PAID
+  FAILED
+  CANCELLED
+}
+
+enum AssignmentStatus {
+  ASSIGNED
+  SUBMITTED
+  REVIEWED
+  RETURNED
+}
+
+enum SubmissionStatus {
+  NOT_SUBMITTED
+  SUBMITTED
+  REVIEWED
+  LATE
+}
+
+enum ComplaintStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+  DISMISSED
+}
+
+enum ComplaintCategory {
+  INAPPROPRIATE_BEHAVIOR
+  NO_SHOW
+  PAYMENT_ISSUE
+  OTHER
+}
+
+enum NotificationType {
+  SESSION_REMINDER
+  MENTORSHIP_REQUEST
+  PAYMENT
+  ASSIGNMENT
+  COMPLAINT
+  GENERAL
+}
+
+enum MentorAppStatus {
+  PENDING
+  AI_SCREENED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum CredentialStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum ReviewerRole {
+  STUDENT
+  MENTOR
+}
+
+enum AIRecommendationType {
+  ROADMAP
+  MENTOR
+  MILESTONE
+}
+
+enum AIRecommendationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
 // ==========================================
 // MODELS
 // ==========================================
 
 /// Core User entity representing authenticated accounts
 model User {
-  id        String   @id @default(uuid())
-  name      String
-  email     String   @unique
-  password  String
-  role      Role     @default(STUDENT)
+  id       String @id @default(uuid())
+  name     String
+  email    String @unique
+  password String
+  role     Role   @default(STUDENT)
+
+  dateOfBirth  DateTime?
+  phone        String?
+  profileImage String?
+  isActive     Boolean   @default(true)
+  isSuspended  Boolean   @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -69,25 +169,46 @@ model User {
   mentorProfile  MentorProfile?
 
   // Messages sent by this user across any mentorship
-  sentMessages   Message[]
+  sentMessages Message[]
+
+  // Guardianship relations
+  guardians Guardian[] @relation("LearnerGuardians")
+  minors    Guardian[] @relation("GuardianUsers")
+
+  // Interactions
+  notifications       Notification[]
+  complaintsSubmitted Complaint[]    @relation("Reporter")
+  complaintsReceived  Complaint[]    @relation("ReportedUser")
 }
 
 /// Profile details specific to users with the STUDENT role
 model StudentProfile {
-  id         String   @id @default(uuid())
-  userId     String   @unique
-  bio        String?  @db.Text
+  id         String  @id @default(uuid())
+  userId     String  @unique
+  bio        String? @db.Text
   education  String?
-  skills     String?  @db.Text
-  interests  String?  @db.Text
+  skills     String? @db.Text
+  interests  String? @db.Text
   careerGoal String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+
+  preferredLearningStyle String?
+  preferredLanguage      String?
+  budget                 Float?
+  studyAvailability      String?
+  experienceLevel        String?
+  onboardingCompleted    Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relationships
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  goals       Goal[]
-  mentorships Mentorship[]
+  user              User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goals             Goal[]
+  mentorships       Mentorship[]
+  payments          Payment[]
+  assignments       Assignment[]           @relation("StudentAssignments")
+  submissions       AssignmentSubmission[]
+  aiRecommendations AIRecommendation[]
 }
 
 /// Profile details specific to users with the MENTOR role
@@ -96,17 +217,34 @@ model MentorProfile {
   userId      String       @unique
   bio         String?      @db.Text
   expertise   String?      @db.Text
-  experience  Int?         // Experience in years
-  hourlyRate  Float?       // Hourly rate for mentoring sessions
+  experience  Int? // Experience in years
+  hourlyRate  Float? // Hourly rate for mentoring sessions
   isAvailable Boolean      @default(true)
   status      MentorStatus @default(PENDING)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+
+  language           String?
+  linkedinUrl        String?
+  profileImage       String?
+  teachingExperience Int?
+  teachingEvidence   String?    @db.Text
+  employmentHistory  String?    @db.Text
+  mentorType         MentorType @default(PROFESSIONAL)
+  sessionFee         Float?
+  verifiedAt         DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relationships
-  user           User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  mentorships    Mentorship[]
-  availabilities MentorAvailability[]
+  user             User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mentorships      Mentorship[]
+  availabilities   MentorAvailability[]
+  topics           MentorTopic[]
+  applications     MentorApplication[]
+  peerApplications PeerMentorApplication[]
+  credentials      Credential[]
+  payouts          PayoutRecord[]
+  assignments      Assignment[]            @relation("MentorAssignments")
 }
 
 /// Goal set by a student to track mentorship progress
@@ -155,10 +293,11 @@ model Mentorship {
   updatedAt DateTime         @updatedAt
 
   // Relationships
-  student  StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  mentor   MentorProfile  @relation(fields: [mentorId], references: [id], onDelete: Cascade)
-  sessions Session[]
-  messages Message[]
+  student     StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  mentor      MentorProfile  @relation(fields: [mentorId], references: [id], onDelete: Cascade)
+  sessions    Session[]
+  messages    Message[]
+  assignments Assignment[]
 
   @@index([studentId])
   @@index([mentorId])
@@ -169,14 +308,19 @@ model Session {
   id           String        @id @default(uuid())
   mentorshipId String
   scheduledAt  DateTime
-  duration     Int           // Duration in minutes
+  duration     Int // Duration in minutes
   status       SessionStatus @default(SCHEDULED)
   meetingLink  String?
+  topic        String?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
   // Relationships
-  mentorship Mentorship @relation(fields: [mentorshipId], references: [id], onDelete: Cascade)
+  mentorship  Mentorship   @relation(fields: [mentorshipId], references: [id], onDelete: Cascade)
+  payment     Payment?
+  reviews     Review[]
+  assignments Assignment[]
+  complaints  Complaint[]
 
   @@index([mentorshipId])
 }
@@ -201,13 +345,310 @@ model Message {
 model MentorAvailability {
   id        String  @id @default(uuid())
   mentorId  String
-  dayOfWeek String  // e.g., "Monday", "Tuesday", etc.
-  startTime String  // e.g., "09:00"
-  endTime   String  // e.g., "17:00"
+  dayOfWeek String // e.g., "Monday", "Tuesday", etc.
+  startTime String // e.g., "09:00"
+  endTime   String // e.g., "17:00"
   isActive  Boolean @default(true)
 
   // Relationships
   mentor MentorProfile @relation(fields: [mentorId], references: [id], onDelete: Cascade)
 
   @@index([mentorId])
+}
+
+// ==========================================
+// NEW MODELS FOR PHASE 1
+// ==========================================
+
+model Guardian {
+  id                 String  @id @default(uuid())
+  userId             String // The user who is the guardian
+  minorStudentId     String // The learner who is being guarded
+  relationship       String // e.g., Parent, Legal Guardian
+  phone              String?
+  email              String?
+  isVerified         Boolean @default(false)
+  isMonitoringActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  guardianUser User @relation("GuardianUsers", fields: [userId], references: [id], onDelete: Cascade)
+  learner      User @relation("LearnerGuardians", fields: [minorStudentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, minorStudentId])
+}
+
+model MentorApplication {
+  id                  String          @id @default(uuid())
+  mentorId            String
+  status              MentorAppStatus @default(PENDING)
+  professionalSummary String?         @db.Text
+  expertise           String?         @db.Text
+  experience          Int?
+  teachingExperience  Int?
+  linkedinUrl         String?
+  languages           String?
+  proposedSessionFee  Float?
+
+  rejectionReason String? @db.Text
+  reviewNotes     String? @db.Text
+  reviewerId      String?
+
+  submittedAt DateTime  @default(now())
+  reviewedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  mentor      MentorProfile      @relation(fields: [mentorId], references: [id], onDelete: Cascade)
+  aiScreening AIScreeningResult?
+  credentials Credential[]
+}
+
+model PeerMentorApplication {
+  id              String          @id @default(uuid())
+  mentorId        String
+  status          MentorAppStatus @default(PENDING)
+  eligibilityInfo String?         @db.Text
+
+  rejectionReason String? @db.Text
+  reviewNotes     String? @db.Text
+  reviewerId      String?
+
+  submittedAt DateTime  @default(now())
+  reviewedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  mentor      MentorProfile      @relation(fields: [mentorId], references: [id], onDelete: Cascade)
+  aiScreening AIScreeningResult?
+}
+
+model AIScreeningResult {
+  id                String  @id @default(uuid())
+  applicationId     String? @unique
+  peerApplicationId String? @unique
+
+  screeningStatus    String
+  recommendation     String  @db.Text
+  structuredFindings Json?
+  riskFlags          Json?
+  modelInfo          String?
+
+  createdAt DateTime @default(now())
+
+  application     MentorApplication?     @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  peerApplication PeerMentorApplication? @relation(fields: [peerApplicationId], references: [id], onDelete: Cascade)
+}
+
+model Credential {
+  id            String  @id @default(uuid())
+  mentorId      String
+  applicationId String?
+
+  type                String
+  title               String
+  description         String?   @db.Text
+  issuingOrganization String?
+  issueDate           DateTime?
+  expiryDate          DateTime?
+
+  fileReference String?
+
+  status                CredentialStatus @default(PENDING)
+  adminVerificationInfo String?          @db.Text
+
+  uploadedAt DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  mentor      MentorProfile      @relation(fields: [mentorId], references: [id], onDelete: Cascade)
+  application MentorApplication? @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+}
+
+model Topic {
+  id       String  @id @default(uuid())
+  name     String  @unique
+  category String?
+
+  mentors MentorTopic[]
+}
+
+model MentorTopic {
+  mentorId String
+  topicId  String
+
+  mentor MentorProfile @relation(fields: [mentorId], references: [id], onDelete: Cascade)
+  topic  Topic         @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@id([mentorId, topicId])
+}
+
+model Payment {
+  id        String  @id @default(uuid())
+  studentId String
+  mentorId  String?
+  sessionId String  @unique
+
+  amount       Float
+  platformFee  Float
+  mentorAmount Float
+  currency     String        @default("INR")
+  status       PaymentStatus @default(CREATED)
+
+  razorpayOrderId   String? @unique
+  razorpayPaymentId String? @unique
+  razorpaySignature String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  paidAt    DateTime?
+
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  session Session        @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  payout  PayoutRecord?
+}
+
+model PayoutRecord {
+  id        String @id @default(uuid())
+  mentorId  String
+  paymentId String @unique
+
+  grossAmount Float
+  platformFee Float
+  netAmount   Float
+
+  status     PayoutStatus @default(PENDING)
+  providerId String?
+
+  paidAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  mentor  MentorProfile @relation(fields: [mentorId], references: [id], onDelete: Cascade)
+  payment Payment       @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+}
+
+model Assignment {
+  id           String  @id @default(uuid())
+  mentorshipId String
+  sessionId    String?
+  mentorId     String
+  studentId    String
+
+  title        String
+  description  String?          @db.Text
+  instructions String?          @db.Text
+  dueDate      DateTime?
+  status       AssignmentStatus @default(ASSIGNED)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  mentorship  Mentorship             @relation(fields: [mentorshipId], references: [id], onDelete: Cascade)
+  session     Session?               @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  mentor      MentorProfile          @relation("MentorAssignments", fields: [mentorId], references: [id], onDelete: Cascade)
+  student     StudentProfile         @relation("StudentAssignments", fields: [studentId], references: [id], onDelete: Cascade)
+  submissions AssignmentSubmission[]
+}
+
+model AssignmentSubmission {
+  id           String @id @default(uuid())
+  assignmentId String
+  studentId    String
+
+  content       String  @db.Text
+  fileReference String?
+
+  score    Float?
+  feedback String?          @db.Text
+  status   SubmissionStatus @default(SUBMITTED)
+
+  submittedAt DateTime  @default(now())
+  reviewedAt  DateTime?
+
+  assignment Assignment     @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  student    StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+}
+
+model Review {
+  id           String       @id @default(uuid())
+  sessionId    String
+  reviewerId   String
+  revieweeId   String
+  rating       Int
+  comment      String?      @db.Text
+  reviewerRole ReviewerRole
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, reviewerRole])
+}
+
+model Notification {
+  id            String           @id @default(uuid())
+  userId        String
+  type          NotificationType
+  title         String
+  message       String           @db.Text
+  isRead        Boolean          @default(false)
+  referenceId   String?
+  referenceType String?
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Complaint {
+  id             String  @id @default(uuid())
+  reporterId     String
+  reportedUserId String?
+  sessionId      String?
+
+  targetType String? // SESSION, PAYMENT, etc.
+  targetId   String? // Generic reference ID if not user/session
+
+  category    ComplaintCategory
+  description String            @db.Text
+  status      ComplaintStatus   @default(OPEN)
+
+  adminNotes   String? @db.Text
+  resolution   String? @db.Text
+  reviewedById String?
+
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  resolvedAt DateTime?
+
+  reporter     User     @relation("Reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  reportedUser User?    @relation("ReportedUser", fields: [reportedUserId], references: [id], onDelete: Cascade)
+  session      Session? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+model FileAsset {
+  id           String @id @default(uuid())
+  ownerId      String
+  originalName String
+  storageKey   String
+  mimeType     String
+  size         Int
+  category     String // e.g., PROFILE_IMAGE, CERTIFICATE, ASSIGNMENT
+
+  createdAt DateTime @default(now())
+}
+
+model AIRecommendation {
+  id        String                 @id @default(uuid())
+  studentId String
+  type      AIRecommendationType
+  content   Json
+  status    AIRecommendationStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
 }
