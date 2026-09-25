@@ -19,6 +19,7 @@ const paymentRoutes = require('./paymentRoutes');
 const notificationRoutes = require('./notificationRoutes');
 const assignmentRoutes = require('./assignmentRoutes');
 const reviewRoutes = require('./reviewRoutes');
+const complaintRoutes = require('./complaintRoutes');
 // Mount sub-routers
 router.use('/health', healthRoutes);
 router.use('/admin', adminRoutes);
@@ -38,5 +39,6 @@ router.use('/payments', paymentRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/assignments', assignmentRoutes);
 router.use('/reviews', reviewRoutes);
+router.use('/complaints', complaintRoutes);
 
 module.exports = router;

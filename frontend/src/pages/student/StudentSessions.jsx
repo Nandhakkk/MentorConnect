@@ -229,9 +229,14 @@ export default function StudentSessions() {
                     {session.status}
                   </span>
                   {session.status === 'COMPLETED' && (
-                    <Link to={`/student/sessions/${session.id}/review`} style={{ fontSize: '0.85rem', color: 'var(--accent-primary)', textDecoration: 'underline' }}>
-                      Rate Session
-                    </Link>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <Link to={`/student/sessions/${session.id}/review`} style={{ fontSize: '0.85rem', color: 'var(--accent-primary)', textDecoration: 'underline' }}>
+                        Rate Session
+                      </Link>
+                      <Link to={`/student/sessions/${session.id}/report`} style={{ fontSize: '0.85rem', color: '#ef4444', textDecoration: 'underline' }}>
+                        Report
+                      </Link>
+                    </div>
                   )}
                 </div>
               </div>

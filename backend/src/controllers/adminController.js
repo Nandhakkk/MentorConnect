@@ -1,4 +1,5 @@
 const prisma = require('../config/db');
+const notificationService = require('../services/notificationService');
 
 /**
  * GET /api/admin/dashboard-stats
@@ -277,6 +278,137 @@ const getMentorships = async (req, res) => {
   }
 };
 
+/**
+ * SUSPEND / ACTIVATE MENTOR OR USER
+ * Existing endpoint handles Mentor status updates...
+ * But if we want to suspend a generic user (student or mentor):
+ */
+const toggleUserSuspension = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) return res.status(404).json({ status: 'error', message: 'User not found' });
+    
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: { isSuspended: !user.isSuspended }
+    });
+
+    return res.status(200).json({ status: 'success', data: updated });
+  } catch (err) {
+    return res.status(500).json({ status: 'error', message: err.message });
+  }
+};
+
+/**
+ * COMPLAINTS
+ */
+
+const getComplaints = async (req, res) => {
+  try {
+    const complaints = await prisma.complaint.findMany({
+      include: {
+        reporter: { select: { id: true, name: true, role: true } },
+        reportedUser: { select: { id: true, name: true, role: true } },
+        session: { select: { id: true, scheduledAt: true } }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    return res.status(200).json({ status: 'success', data: complaints });
+  } catch (err) {
+    return res.status(500).json({ status: 'error', message: err.message });
+  }
+};
+
+const getComplaintById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const complaint = await prisma.complaint.findUnique({
+      where: { id },
+      include: {
+        reporter: { select: { id: true, name: true, role: true } },
+        reportedUser: { select: { id: true, name: true, role: true } },
+        session: { select: { id: true, scheduledAt: true, duration: true } }
+      }
+    });
+
+    if (!complaint) return res.status(404).json({ status: 'error', message: 'Complaint not found' });
+    return res.status(200).json({ status: 'success', data: complaint });
+  } catch (err) {
+    return res.status(500).json({ status: 'error', message: err.message });
+  }
+};
+
+const updateComplaintStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, resolutionNote } = req.body;
+    const adminId = req.user.id;
+
+    const validStatuses = ['OPEN', 'UNDER_REVIEW', 'RESOLVED', 'DISMISSED'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ status: 'error', message: 'Invalid status' });
+    }
+
+    if (['RESOLVED', 'DISMISSED'].includes(status) && !resolutionNote) {
+      return res.status(400).json({ status: 'error', message: 'Resolution note required when resolving or dismissing' });
+    }
+
+    const current = await prisma.complaint.findUnique({ where: { id } });
+    if (!current) return res.status(404).json({ status: 'error', message: 'Complaint not found' });
+
+    const updateData = { status, reviewedById: adminId };
+    
+    if (resolutionNote) updateData.resolution = resolutionNote;
+    if (['RESOLVED', 'DISMISSED'].includes(status)) updateData.resolvedAt = new Date();
+
+    const updated = await prisma.complaint.update({
+      where: { id },
+      data: updateData
+    });
+
+    // Notify Reporter
+    let notifTitle, notifMsg;
+    if (status === 'UNDER_REVIEW' && current.status === 'OPEN') {
+      notifTitle = 'Complaint Under Review';
+      notifMsg = 'Your complaint is now under review.';
+    } else if (status === 'RESOLVED') {
+      notifTitle = 'Complaint Resolved';
+      notifMsg = 'Your complaint has been reviewed and resolved.';
+    } else if (status === 'DISMISSED') {
+      notifTitle = 'Complaint Dismissed';
+      notifMsg = 'Your complaint has been reviewed and dismissed.';
+    }
+
+    if (notifTitle) {
+      await notificationService.createNotification(
+        current.reporterId,
+        'COMPLAINT',
+        notifTitle,
+        notifMsg,
+        current.id,
+        'COMPLAINT'
+      );
+    }
+
+    // Notify Reported User securely
+    if (['UNDER_REVIEW', 'RESOLVED', 'DISMISSED'].includes(status) && current.status === 'OPEN') {
+      await notificationService.createNotification(
+        current.reportedUserId,
+        'COMPLAINT',
+        'Complaint Review Notice',
+        'A complaint involving one of your mentoring interactions is under review.',
+        current.id,
+        'COMPLAINT'
+      );
+    }
+
+    return res.status(200).json({ status: 'success', data: updated });
+  } catch (err) {
+    return res.status(500).json({ status: 'error', message: err.message });
+  }
+};
+
 module.exports = {
   getDashboardStats,
   getUsers,
@@ -284,5 +416,9 @@ module.exports = {
   getMentorships,
   getMentorApplications,
   getMentorApplicationById,
-  updateMentorApplicationStatus
+  updateMentorApplicationStatus,
+  getComplaints,
+  getComplaintById,
+  updateComplaintStatus,
+  toggleUserSuspension
 };

@@ -17,4 +17,12 @@ router.get('/mentor-applications', adminController.getMentorApplications);
 router.get('/mentor-applications/:id', adminController.getMentorApplicationById);
 router.put('/mentor-applications/:id/status', adminController.updateMentorApplicationStatus);
 
+// Complaints
+router.get('/complaints', adminController.getComplaints);
+router.get('/complaints/:id', adminController.getComplaintById);
+router.put('/complaints/:id/status', adminController.updateComplaintStatus);
+
+// User Suspension
+router.put('/users/:userId/suspend', adminController.toggleUserSuspension);
+
 module.exports = router;

@@ -24,6 +24,8 @@ import BookSession from './pages/student/BookSession';
 import StudentSessions from './pages/student/StudentSessions';
 import LiveSession from './pages/student/LiveSession';
 import ReviewSession from './pages/student/ReviewSession';
+import ReportSession from './pages/shared/ReportSession';
+import MyComplaints from './pages/shared/MyComplaints';
 import StudentAssignments from './pages/student/StudentAssignments';
 import AssignmentDetails from './pages/student/AssignmentDetails';
 import StudentMessages from './pages/student/StudentMessages';
@@ -46,6 +48,8 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminMentors from './pages/admin/AdminMentors';
 import AdminMentorships from './pages/admin/AdminMentorships';
+import AdminComplaints from './pages/admin/AdminComplaints';
+import AdminComplaintReview from './pages/admin/AdminComplaintReview';
 import AdminMentorApplications from './pages/admin/AdminMentorApplications';
 import AdminMentorApplicationReview from './pages/admin/AdminMentorApplicationReview';
 import GuardianDashboard from './pages/guardian/GuardianDashboard';
@@ -101,6 +105,8 @@ export default function App() {
             <Route path="sessions" element={<StudentSessions />} />
             <Route path="sessions/:id/live" element={<LiveSession />} />
             <Route path="sessions/:id/review" element={<ReviewSession />} />
+            <Route path="sessions/:id/report" element={<ReportSession />} />
+            <Route path="complaints" element={<MyComplaints />} />
             <Route path="assignments" element={<StudentAssignments />} />
             <Route path="assignments/:id" element={<AssignmentDetails />} />
             <Route path="messages" element={<StudentMessages />} />
@@ -125,6 +131,8 @@ export default function App() {
             <Route path="sessions" element={<MentorSessions />} />
             <Route path="sessions/:id/live" element={<LiveSession />} />
             <Route path="sessions/:id/review" element={<ReviewStudent />} />
+            <Route path="sessions/:id/report" element={<ReportSession />} />
+            <Route path="complaints" element={<MyComplaints />} />
             <Route path="assignments" element={<MentorAssignments />} />
             <Route path="assignments/create" element={<CreateAssignment />} />
             <Route path="assignments/:id/review" element={<ReviewAssignment />} />
@@ -150,6 +158,8 @@ export default function App() {
             <Route path="mentor-applications" element={<AdminMentorApplications />} />
             <Route path="mentor-applications/:id" element={<AdminMentorApplicationReview />} />
             <Route path="mentorships" element={<AdminMentorships />} />
+            <Route path="complaints" element={<AdminComplaints />} />
+            <Route path="complaints/:id" element={<AdminComplaintReview />} />
             <Route index element={<Navigate to="dashboard" replace />} />
           </Route>
 
