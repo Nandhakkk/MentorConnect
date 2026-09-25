@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchMentorById, createMentorship } from '../../services/mentorService';
+import BackLink from '../../components/BackLink';
+import PageHeader from '../../components/PageHeader';
 
 export default function PublicMentorProfile() {
   const { id } = useParams();
@@ -48,11 +50,8 @@ export default function PublicMentorProfile() {
 
   return (
     <div className="page-content">
-      <div style={{ marginBottom: '1rem' }}>
-        <button onClick={() => navigate('/student/mentor')} style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', fontSize: '0.9rem' }}>
-          &larr; Back to Discovery
-        </button>
-      </div>
+      <BackLink to="/student/mentor">Back to Find Mentors</BackLink>
+      <PageHeader title="Mentor profile" subtitle="Learn about this mentor before you send a mentorship request." crumbs={[{ label: 'Dashboard', to: '/student/dashboard' }, { label: 'Find mentors', to: '/student/mentor' }, { label: 'Mentor profile' }]} />
 
       <div className="glass-card" style={{ padding: '3rem 2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
         <div style={{ 

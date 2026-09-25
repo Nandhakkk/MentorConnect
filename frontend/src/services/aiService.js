@@ -25,7 +25,9 @@ export async function askAI(question, goalId = null) {
 
   const data = await response.json();
   if (!response.ok || !data.success) {
-    throw new Error(data.error || 'Failed to get AI response');
+    const error = new Error(data.error || 'Failed to get AI response');
+    error.status = response.status;
+    throw error;
   }
   return data.answer;
 }

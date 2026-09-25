@@ -51,6 +51,7 @@ export default function AdminMentorships() {
             style={{ padding: '0.5rem 1rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
           >
             <option value="ALL">All Mentorships</option>
+            <option value="PENDING">Pending</option>
             <option value="ACTIVE">Active</option>
             <option value="COMPLETED">Completed</option>
             <option value="CANCELLED">Cancelled</option>

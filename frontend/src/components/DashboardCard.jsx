@@ -1,36 +1,16 @@
-export default function DashboardCard({ title, value, subtitle, icon, color = 'var(--accent-primary)' }) {
+const iconBackgrounds = { '#10b981': '#ecfdf3', '#f59e0b': '#fffaeb', '#a855f7': '#f4f3ff', '#6b7280': '#f2f4f7' };
+
+export default function DashboardCard({ title, value, subtitle, icon, color = '#4f46e5' }) {
   return (
     <div className="glass-card dashboard-stat-card">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem' }}>
         <div>
-          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            {title}
-          </span>
-          <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: '0.25rem' }}>
-            {value}
-          </div>
+          <div style={{ color: 'var(--text-muted)', fontSize: '.76rem', fontWeight: 700, letterSpacing: '.04em', textTransform: 'uppercase' }}>{title}</div>
+          <div style={{ color: 'var(--text-primary)', fontSize: '1.8rem', fontWeight: 750, lineHeight: 1.2, marginTop: '.35rem' }}>{value}</div>
         </div>
-        {icon && (
-          <div style={{
-            width: '42px',
-            height: '42px',
-            borderRadius: '12px',
-            background: `rgba(${color === 'var(--accent-primary)' ? '99, 102, 241, 0.15' : '16, 185, 129, 0.15'})`,
-            border: `1px solid ${color === 'var(--accent-primary)' ? 'rgba(99, 102, 241, 0.3)' : 'rgba(16, 185, 129, 0.3)'}`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: color
-          }}>
-            {icon}
-          </div>
-        )}
+        {icon && <div style={{ display: 'grid', placeItems: 'center', width: '38px', height: '38px', flexShrink: 0, borderRadius: '9px', background: iconBackgrounds[color] || '#eef2ff', color }}>{icon}</div>}
       </div>
-      {subtitle && (
-        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-          {subtitle}
-        </div>
-      )}
+      {subtitle && <p style={{ fontSize: '.82rem', marginTop: '.7rem' }}>{subtitle}</p>}
     </div>
   );
 }

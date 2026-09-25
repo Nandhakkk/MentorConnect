@@ -1,215 +1,118 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import PageHeader from '../../components/PageHeader';
 import { fetchGoals } from '../../services/goalService';
 import { askAI } from '../../services/aiService';
 
-const EXAMPLE_QUESTIONS = [
-  'What should I focus on this week?',
-  'How can I complete my current milestones?',
-  'Create a learning plan for my goal.',
-  'Which milestone should I prioritize?',
+const QUICK_ACTIONS = [
+  ['Explain My Goal', 'Explain my current goal and what skills I should focus on.'],
+  ['What Should I Focus On?', 'Based on my current goal and incomplete milestones, what should I focus on next?'],
+  ['Help Me With My Milestones', 'Review my incomplete milestones and suggest what I should work on next.'],
+  ['Prepare Me For My Next Session', 'Based on my current goal and progress, what should I discuss with my mentor in my next session?']
 ];
+const SUGGESTIONS = ['What should I focus on next?', 'Why am I falling behind on my goal?', 'Explain my current milestones.', 'How can I prepare for my next mentor session?', 'What skills should I improve for this goal?'];
 
-// Simple markdown-to-HTML: bold, bullets, newlines
-function formatResponse(text) {
-  return text
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/^[-•]\s+(.+)$/gm, '<li>$1</li>')
-    .replace(/((<li>.*<\/li>\n?)+)/gs, '<ul>$1</ul>')
-    .replace(/\n{2,}/g, '</p><p>')
-    .replace(/\n/g, '<br/>');
+function InlineMarkdown({ text }) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, index) => part.startsWith('**') && part.endsWith('**') ? <strong key={index}>{part.slice(2, -2)}</strong> : part);
+}
+
+function MarkdownResponse({ text }) {
+  const lines = text.split('\n');
+  const content = [];
+  let bullets = [];
+  const flushBullets = () => { if (bullets.length) { content.push(<ul key={`list-${content.length}`}>{bullets.map((item, index) => <li key={index}><InlineMarkdown text={item} /></li>)}</ul>); bullets = []; } };
+  lines.forEach((line, index) => {
+    const bullet = line.match(/^[-*•]\s+(.+)/);
+    const numbered = line.match(/^\d+[.)]\s+(.+)/);
+    if (bullet || numbered) { bullets.push((bullet || numbered)[1]); return; }
+    flushBullets();
+    if (!line.trim()) return;
+    const heading = line.match(/^#{1,3}\s+(.+)/) || line.match(/^(Summary|Recommended Actions|Why|Next Step):?$/i);
+    content.push(heading ? <h4 key={index}>{heading[1] || line}</h4> : <p key={index}><InlineMarkdown text={line} /></p>);
+  });
+  flushBullets();
+  return <div className="ai-markdown">{content}</div>;
+}
+
+function friendlyError(error) {
+  if (!error?.status) return 'Unable to reach MentorConnect AI. Check your connection and try again.';
+  if (error.status === 401) return 'Your session has expired. Please sign in again.';
+  if (error.status === 403) return 'MentorConnect AI is available to student accounts only.';
+  if (error.status === 404) return 'The selected goal is no longer available. Choose another goal and try again.';
+  if (error.status === 503) return 'AI service is currently unavailable. Please try again later.';
+  if (error.status === 400) return error.message || 'Please enter a valid question.';
+  return 'MentorConnect AI could not complete that request. Please try again.';
 }
 
 export default function StudentAIAssistant() {
   const [goals, setGoals] = useState([]);
   const [selectedGoalId, setSelectedGoalId] = useState('');
   const [question, setQuestion] = useState('');
-  const [answer, setAnswer] = useState('');
+  const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState('');
   const [error, setError] = useState('');
-  const [history, setHistory] = useState([]); // [{ question, answer }]
 
-  // Load student's goals on mount
   useEffect(() => {
-    fetchGoals()
-      .then(data => setGoals(data.filter(g => g.status === 'ACTIVE')))
-      .catch(err => console.error('Failed to load goals:', err));
+    fetchGoals().then((data) => {
+      setGoals(data);
+      const activeGoal = data.find((goal) => goal.status === 'ACTIVE');
+      if (activeGoal) setSelectedGoalId(activeGoal.id);
+    }).catch(() => setLoadError('Your goals could not be loaded. You can still ask a general question.'));
   }, []);
 
-  const handleAsk = async (e) => {
-    e.preventDefault();
-    if (!question.trim()) return;
+  const selectedGoal = useMemo(() => goals.find((goal) => goal.id === selectedGoalId), [goals, selectedGoalId]);
+  const completed = selectedGoal?.milestones?.filter((milestone) => milestone.status === 'COMPLETED').length || 0;
+  const total = selectedGoal?.milestones?.length || 0;
+  const progress = total ? Math.round((completed / total) * 100) : 0;
 
-    setLoading(true);
-    setError('');
-    setAnswer('');
-
+  const submit = async (event) => {
+    event?.preventDefault();
+    const prompt = question.trim();
+    if (!prompt || loading) return;
+    setError(''); setLoading(true);
+    const userMessage = { role: 'user', content: prompt, time: new Date() };
+    setMessages((current) => [...current, userMessage]); setQuestion('');
     try {
-      const result = await askAI(question.trim(), selectedGoalId || null);
-      setAnswer(result);
-      setHistory(prev => [{ question: question.trim(), answer: result }, ...prev.slice(0, 4)]);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+      const answer = await askAI(prompt, selectedGoalId || null);
+      setMessages((current) => [...current, { role: 'assistant', content: answer, time: new Date() }]);
+    } catch (requestError) {
+      setError(friendlyError(requestError));
+    } finally { setLoading(false); }
   };
 
-  const handleExampleClick = (q) => {
-    setQuestion(q);
-  };
+  const handleKeyDown = (event) => { if (event.key === 'Enter' && event.ctrlKey) submit(event); };
 
-  return (
-    <div className="page-content">
-      <div className="page-header">
-        <div>
-          <h2 className="page-title">✨ AI Learning Assistant</h2>
-          <p className="page-subtitle">Get personalized learning guidance based on your goals and milestones.</p>
+  return <div className="page-content ai-workspace">
+    <PageHeader title="MentorConnect AI" subtitle="Your personal AI learning and mentoring assistant" />
+    <p className="ai-intro">Ask for focused, practical guidance grounded in your goals and milestones. Your conversation stays in this browser session.</p>
+    <div className="ai-layout">
+      <aside className="ai-sidebar">
+        <section className="glass-card ai-goal-card">
+          <div className="ai-card-kicker">Current goal</div>
+          <label htmlFor="ai-goal-select" className="sr-only">AI goal context</label>
+          <select id="ai-goal-select" value={selectedGoalId} onChange={(event) => setSelectedGoalId(event.target.value)}>
+            <option value="">All active goals</option>
+            {goals.map((goal) => <option key={goal.id} value={goal.id}>{goal.title}</option>)}
+          </select>
+          {selectedGoal ? <div className="ai-goal-summary"><h3>{selectedGoal.title}</h3>{selectedGoal.description && <p>{selectedGoal.description}</p>}<span className="badge badge-success">{selectedGoal.status}</span><div className="progress-label"><span>Milestone progress</span><strong>{progress}%</strong></div><div className="progress-track"><span style={{ width: `${progress}%` }} /></div><p className="progress-copy">{completed} of {total} milestones completed</p></div> : <div className="ai-empty-goal"><h3>No active goal yet</h3><p>Create a goal to unlock personalized AI guidance.</p><Link className="btn btn-primary" to="/student/goals">Create a goal</Link></div>}
+          {loadError && <p className="ai-inline-error">{loadError}</p>}
+        </section>
+        <section className="glass-card ai-context-card"><h3>AI Context</h3><ul><li>Current goal{selectedGoal ? '' : 's'}</li><li>Goal milestones</li><li>Milestone completion status</li></ul><p>Context is sent only from your MentorConnect goals and milestones.</p></section>
+        <section className="glass-card"><h3 className="ai-section-title">Quick AI actions</h3><div className="ai-actions">{QUICK_ACTIONS.map(([label, prompt]) => <button key={label} type="button" onClick={() => setQuestion(prompt)}>{label}</button>)}</div></section>
+      </aside>
+      <section className="glass-card ai-chat-card">
+        <div className="ai-chat-heading"><div><h3>Learning conversation</h3><p>Review and refine each question before you send it.</p></div><span className="badge badge-purple">Goal-aware</span></div>
+        <div className="ai-chat-history" aria-live="polite">
+          {messages.length === 0 && !loading && <div className="ai-chat-empty"><span>✦</span><h3>Start a focused learning conversation</h3><p>Choose an action or write a question about your goals, milestones, and next steps.</p></div>}
+          {messages.map((message, index) => <div key={`${message.role}-${index}`} className={`ai-message ${message.role}`}><div className="ai-message-label">{message.role === 'user' ? 'You' : 'MentorConnect AI'}</div><div className="ai-message-body">{message.role === 'user' ? message.content : <MarkdownResponse text={message.content} />}</div></div>)}
+          {loading && <div className="ai-thinking"><span className="ai-spinner" />MentorConnect AI is thinking...</div>}
         </div>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', alignItems: 'start' }}>
-
-        {/* Left: Input form */}
-        <div>
-          <div className="glass-card" style={{ padding: '2rem' }}>
-            <form onSubmit={handleAsk}>
-              {/* Goal selector */}
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                  Focus on a specific goal (optional)
-                </label>
-                <select
-                  value={selectedGoalId}
-                  onChange={e => setSelectedGoalId(e.target.value)}
-                  style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white', fontSize: '0.95rem' }}
-                >
-                  <option value="">All active goals</option>
-                  {goals.map(g => (
-                    <option key={g.id} value={g.id}>{g.title}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Question input */}
-              <div style={{ marginBottom: '1.25rem' }}>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                  Ask your question *
-                </label>
-                <textarea
-                  value={question}
-                  onChange={e => setQuestion(e.target.value)}
-                  placeholder="e.g. What should I focus on this week?"
-                  rows="4"
-                  maxLength={2000}
-                  required
-                  style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white', fontSize: '0.95rem', resize: 'vertical' }}
-                />
-                <div style={{ textAlign: 'right', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                  {question.length}/2000
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading || !question.trim()}
-                style={{
-                  width: '100%', padding: '0.85rem',
-                  background: loading || !question.trim() ? 'rgba(255,255,255,0.08)' : 'linear-gradient(135deg, #6366f1, #a855f7)',
-                  border: 'none', borderRadius: '8px', color: 'white',
-                  fontSize: '1rem', fontWeight: 600, cursor: loading || !question.trim() ? 'default' : 'pointer',
-                  transition: 'background 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
-                }}
-              >
-                {loading ? (
-                  <>
-                    <span style={{ display: 'inline-block', width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.4)', borderTopColor: 'white', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></span>
-                    Thinking...
-                  </>
-                ) : '✨ Ask AI'}
-              </button>
-            </form>
-
-            {/* Example questions */}
-            <div style={{ marginTop: '1.75rem' }}>
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>Try an example:</p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                {EXAMPLE_QUESTIONS.map(q => (
-                  <button
-                    key={q}
-                    type="button"
-                    onClick={() => handleExampleClick(q)}
-                    style={{
-                      background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)',
-                      color: 'var(--accent-primary)', padding: '0.5rem 0.75rem', borderRadius: '6px',
-                      cursor: 'pointer', textAlign: 'left', fontSize: '0.85rem', transition: 'background 0.15s'
-                    }}
-                  >
-                    "{q}"
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right: AI response */}
-        <div>
-          {error && (
-            <div className="glass-card" style={{ padding: '1.5rem', borderLeft: '4px solid #ef4444', marginBottom: '1.5rem' }}>
-              <p style={{ color: '#ef4444', margin: 0, fontSize: '0.95rem' }}>{error}</p>
-            </div>
-          )}
-
-          {answer && (
-            <div className="glass-card" style={{ padding: '2rem', borderLeft: '4px solid #6366f1', marginBottom: '1.5rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-                <span style={{ fontSize: '1.2rem' }}>✨</span>
-                <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--accent-primary)' }}>AI Response</h3>
-              </div>
-              <div
-                style={{ color: 'var(--text-secondary)', lineHeight: 1.7, fontSize: '0.95rem' }}
-                dangerouslySetInnerHTML={{ __html: `<p>${formatResponse(answer)}</p>` }}
-              />
-            </div>
-          )}
-
-          {!answer && !error && !loading && (
-            <div className="glass-card" style={{ padding: '3rem', textAlign: 'center' }}>
-              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎯</div>
-              <p style={{ color: 'var(--text-muted)', margin: 0 }}>
-                Ask a question to get personalized AI guidance based on your goals.
-              </p>
-            </div>
-          )}
-
-          {loading && (
-            <div className="glass-card" style={{ padding: '3rem', textAlign: 'center' }}>
-              <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>🤔</div>
-              <p style={{ color: 'var(--text-muted)', margin: 0 }}>Generating personalized advice...</p>
-            </div>
-          )}
-
-          {/* Session history */}
-          {history.length > 1 && (
-            <div style={{ marginTop: '1.5rem' }}>
-              <h4 style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>Earlier in this session</h4>
-              {history.slice(1).map((h, i) => (
-                <div key={i} className="glass-card" style={{ padding: '1rem', marginBottom: '0.75rem', opacity: 0.75 }}>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--accent-primary)', margin: '0 0 0.5rem 0', fontWeight: 600 }}>
-                    Q: {h.question}
-                  </p>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>
-                    {h.answer}
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* CSS for spinner */}
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        {error && <div className="ai-error" role="alert">{error}</div>}
+        <form onSubmit={submit} className="ai-composer"><label htmlFor="ai-question">Ask MentorConnect AI</label><textarea id="ai-question" value={question} onChange={(event) => setQuestion(event.target.value)} onKeyDown={handleKeyDown} placeholder="Ask MentorConnect AI about your goal..." rows="4" maxLength="2000" disabled={loading} /><div className="ai-composer-footer"><span>{question.length}/2000 · Ctrl+Enter to send</span><button type="submit" className="btn btn-primary" disabled={loading || !question.trim()}>{loading ? 'Thinking...' : 'Send to AI'}</button></div></form>
+        <div className="ai-suggestions"><span>Try asking MentorConnect AI</span><div>{SUGGESTIONS.map((prompt) => <button key={prompt} type="button" onClick={() => setQuestion(prompt)}>{prompt}</button>)}</div></div>
+      </section>
     </div>
-  );
+  </div>;
 }

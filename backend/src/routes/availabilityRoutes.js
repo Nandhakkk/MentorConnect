@@ -5,6 +5,7 @@ const authMiddleware = require('../middleware/authMiddleware');
 
 // All availability routes require authentication
 router.use(authMiddleware.authenticateToken);
+router.use(authMiddleware.requireApprovedMentor);
 
 router.get('/', availabilityController.getAvailability);
 router.post('/', availabilityController.createAvailability);

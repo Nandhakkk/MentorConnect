@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchGoalById, updateGoal, deleteGoal, createMilestone, updateMilestone, deleteMilestone } from '../../services/goalService';
+import BackLink from '../../components/BackLink';
+import PageHeader from '../../components/PageHeader';
 
 export default function GoalDetails() {
   const { id } = useParams();
@@ -115,11 +117,8 @@ export default function GoalDetails() {
 
   return (
     <div className="page-content">
-      <div style={{ marginBottom: '1rem' }}>
-        <button onClick={() => navigate('/student/goals')} style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', fontSize: '0.9rem' }}>
-          &larr; Back to Goals
-        </button>
-      </div>
+      <BackLink to="/student/goals">Back to Goals</BackLink>
+      <PageHeader title={goal.title} subtitle="Review progress, manage milestones, and keep your plan on track." crumbs={[{ label: 'Dashboard', to: '/student/dashboard' }, { label: 'Goals', to: '/student/goals' }, { label: 'Goal details' }]} />
 
       <div className="glass-card" style={{ padding: '2rem', marginBottom: '2rem' }}>
         {isEditingGoal ? (

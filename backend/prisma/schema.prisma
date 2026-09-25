@@ -32,6 +32,7 @@ enum MilestoneStatus {
 }
 
 enum MentorshipStatus {
+  PENDING
   ACTIVE
   COMPLETED
   CANCELLED

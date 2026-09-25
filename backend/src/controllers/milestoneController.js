@@ -118,7 +118,7 @@ const updateMilestone = async (req, res) => {
 
     const { title, description, dueDate, status } = req.body;
 
-    const validStatuses = ['PENDING', 'COMPLETED', 'CANCELLED'];
+    const validStatuses = ['PENDING', 'COMPLETED'];
     if (status && !validStatuses.includes(status)) {
       return res.status(400).json({
         status: 'error',

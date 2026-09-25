@@ -66,6 +66,7 @@ const getAvailableMentors = async (req, res) => {
 
     const whereClause = {
       isAvailable: true,
+      status: 'APPROVED',
       user: { role: 'MENTOR' }
     };
 
@@ -100,8 +101,8 @@ const getMentorById = async (req, res) => {
   try {
     const mentorId = req.params.id;
 
-    const profile = await prisma.mentorProfile.findUnique({
-      where: { id: mentorId },
+    const profile = await prisma.mentorProfile.findFirst({
+      where: { id: mentorId, status: 'APPROVED' },
       include: {
         user: { select: { id: true, name: true, email: true } }
       }

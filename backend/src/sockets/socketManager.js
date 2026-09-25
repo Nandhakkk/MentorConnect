@@ -28,11 +28,14 @@ const authenticateSocket = async (socket) => {
       name: true,
       role: true,
       studentProfile: { select: { id: true } },
-      mentorProfile: { select: { id: true } }
+      mentorProfile: { select: { id: true, status: true } }
     }
   });
 
   if (!user) throw new Error('User not found.');
+  if (user.role === 'MENTOR' && user.mentorProfile?.status !== 'APPROVED') {
+    throw new Error('Mentor application is pending or rejected.');
+  }
   return user;
 };
 
@@ -48,7 +51,7 @@ const verifySocketMentorshipAccess = async (mentorshipId, user) => {
     }
   });
 
-  if (!mentorship) return false;
+  if (!mentorship || mentorship.status !== 'ACTIVE') return false;
 
   const studentUserId = mentorship.student?.userId;
   const mentorUserId = mentorship.mentor?.userId;

@@ -22,10 +22,11 @@ export default function StudentSessions() {
         fetchSessions(),
         fetchStudentMentorships()
       ]);
+      const activeMentorships = mentorshipsData.filter(m => m.status === 'ACTIVE');
       setSessions(sessionsData);
-      setMentorships(mentorshipsData.filter(m => m.status === 'ACTIVE'));
-      if (mentorshipsData.length > 0 && !bookingData.mentorshipId) {
-        setBookingData(prev => ({ ...prev, mentorshipId: mentorshipsData[0].id }));
+      setMentorships(activeMentorships);
+      if (activeMentorships.length > 0 && !bookingData.mentorshipId) {
+        setBookingData(prev => ({ ...prev, mentorshipId: activeMentorships[0].id }));
       }
     } catch (err) {
       setError(err.message);

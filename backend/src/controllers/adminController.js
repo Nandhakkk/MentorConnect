@@ -112,6 +112,46 @@ const getMentors = async (req, res) => {
   }
 };
 
+const updateMentorStatus = async (req, res, status) => {
+  try {
+    const mentor = await prisma.mentorProfile.findUnique({
+      where: { id: req.params.id },
+      include: { user: { select: { id: true, name: true, email: true } } }
+    });
+
+    if (!mentor) {
+      return res.status(404).json({ status: 'error', message: 'Mentor application not found.' });
+    }
+
+    if (mentor.status !== 'PENDING') {
+      return res.status(409).json({
+        status: 'error',
+        message: `Only pending mentor applications can be ${status.toLowerCase()}.`
+      });
+    }
+
+    const updatedMentor = await prisma.mentorProfile.update({
+      where: { id: mentor.id },
+      data: { status },
+      include: { user: { select: { id: true, name: true, email: true } } }
+    });
+
+    return res.status(200).json({
+      status: 'success',
+      message: `Mentor application ${status.toLowerCase()} successfully.`,
+      mentor: updatedMentor
+    });
+  } catch (err) {
+    return res.status(500).json({ status: 'error', message: 'Failed to update mentor application.', details: err.message });
+  }
+};
+
+/** PUT /api/admin/mentors/:id/approve */
+const approveMentor = (req, res) => updateMentorStatus(req, res, 'APPROVED');
+
+/** PUT /api/admin/mentors/:id/reject */
+const rejectMentor = (req, res) => updateMentorStatus(req, res, 'REJECTED');
+
 /**
  * GET /api/admin/mentorships
  * Returns all mentorships.
@@ -144,5 +184,7 @@ module.exports = {
   getDashboardStats,
   getUsers,
   getMentors,
+  approveMentor,
+  rejectMentor,
   getMentorships
 };

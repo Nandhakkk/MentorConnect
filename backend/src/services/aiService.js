@@ -8,8 +8,9 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 class AIService {
   constructor() {
     this.apiKey = process.env.AI_SERVICE_API_KEY || null;
-    // Default to gemini-1.5-flash which is available in current SDK versions
-    this.modelName = process.env.AI_SERVICE_MODEL || 'gemini-1.5-flash';
+    // Gemini 3.6 Flash is supported by the configured v1beta generateContent API.
+    this.modelName = process.env.AI_SERVICE_MODEL || 'gemini-3.6-flash';
+    this.fallbackModelName = process.env.AI_SERVICE_FALLBACK_MODEL || 'gemini-flash-lite-latest';
     this.client = null;
   }
 
@@ -31,12 +32,43 @@ class AIService {
    * @param {string} prompt - Full prompt string
    * @returns {Promise<string>} - Generated text response
    */
+  _isTemporaryCapacityError(error) {
+    const message = String(error?.message || error);
+    return /\b503\b/.test(message);
+  }
+
+  _wait(milliseconds) {
+    return new Promise((resolve) => setTimeout(resolve, milliseconds));
+  }
+
+  async _generateWithModel(genAI, modelName, prompt) {
+    const model = genAI.getGenerativeModel({ model: modelName });
+    const result = await model.generateContent(prompt);
+    return result.response.text();
+  }
+
   async generateText(prompt) {
     const genAI = this._getClient();
-    const model = genAI.getGenerativeModel({ model: this.modelName });
-    const result = await model.generateContent(prompt);
-    const response = result.response;
-    return response.text();
+
+    try {
+      return await this._generateWithModel(genAI, this.modelName, prompt);
+    } catch (primaryError) {
+      if (!this._isTemporaryCapacityError(primaryError)) {
+        throw primaryError;
+      }
+    }
+
+    await this._wait(250);
+
+    try {
+      return await this._generateWithModel(genAI, this.modelName, prompt);
+    } catch (retryError) {
+      if (!this._isTemporaryCapacityError(retryError)) {
+        throw retryError;
+      }
+    }
+
+    return this._generateWithModel(genAI, this.fallbackModelName, prompt);
   }
 
   /**
@@ -68,15 +100,24 @@ class AIService {
         contextBlock += '\n';
       });
     } else {
-      contextBlock = '\nNo active goals defined yet.\n';
+      contextBlock = '\nThe student has no active goals or milestones yet. This is context, not a prerequisite for helping them.\n';
     }
 
     return `You are MentorConnect's AI Learning Assistant.
 
-You help students make progress toward their learning and career goals.
-Use the student's goals and milestones as context.
-Give practical, personalized and concise guidance.
-Do not invent information about the student's progress.
+You are an empathetic, beginner-friendly career and learning mentor. Understand the student's underlying intent even when their English is short, informal, misspelled, or incomplete. Never criticize their grammar.
+
+Use the provided goals and milestones as factual personalization when they exist, but do not treat them as a requirement for giving useful advice. Do not invent information about the student's progress, skills, mentor, sessions, or circumstances. If a detail is unknown, state any reasonable interpretation gently and ask a small number of useful follow-up questions.
+
+For broad beginner questions or when there are no active goals:
+- Reassure the student that starting from zero is normal; do not tell them to create a goal before helping.
+- Infer the likely intent and briefly say what you understood.
+- Give an immediate, practical starting step while asking at most two simple questions about interests, background, or available study time.
+- Explain only a few relevant paths in simple language (for example web, mobile, data/AI, or cloud) when the student has not chosen a direction.
+- Start with common foundations: computer and programming basics, variables, conditions, loops, functions, basic data structures, Git/GitHub, and problem solving. Introduce specialization, projects, portfolio, interviews, and job readiness progressively rather than listing an entire curriculum at once.
+- Avoid overwhelming the student with too many technologies. Include why the next step matters, a small practice activity, and when to move forward.
+
+For students who mention partial experience, such as knowing a little Python, build from that stage rather than restarting them at zero. For requests about what to do today, use goal and milestone context when available and give a concrete task with an approximate study time.
 
 When appropriate:
 - Identify what they should focus on next.
@@ -84,9 +125,9 @@ When appropriate:
 - Suggest realistic learning activities.
 - Explain how their milestones relate to their overall goal.
 - Point out incomplete milestones that need attention.
-- Suggest a weekly plan if relevant.
+- Encourage the student to discuss important choices with their human mentor.
 
-Keep your response clear, structured, and encouraging. Use bullet points where helpful.
+Keep your response clear, supportive, and actionable. Adapt the structure to the question. For beginner career questions, useful sections can include: what you understood, where to start, a few possible paths, a simple roadmap, and what you need from the student next. Use bullet points or numbered steps where helpful.
 
 --- Student's Goals and Milestones ---
 ${contextBlock}

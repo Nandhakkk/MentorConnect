@@ -43,7 +43,7 @@ export default function StudentMentors() {
       <div className="page-header">
         <div>
           <h2 className="page-title">My Mentors</h2>
-          <p className="page-subtitle">Manage your current mentorship connections.</p>
+          <p className="page-subtitle">Track your pending requests and active mentorships.</p>
         </div>
       </div>
 
@@ -66,7 +66,7 @@ export default function StudentMentors() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '1.5rem' }}>
         {mentorships.length === 0 ? (
           <div className="glass-card" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '3rem' }}>
-            <p style={{ color: 'var(--text-secondary)' }}>You don't have any active mentorships.</p>
+            <p style={{ color: 'var(--text-secondary)' }}>You don't have any mentorship requests or active connections.</p>
           </div>
         ) : (
           mentorships.map(m => (
@@ -94,12 +94,12 @@ export default function StudentMentors() {
               </div>
               
               <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
-                Started: {new Date(m.createdAt).toLocaleDateString()}
+                {m.status === 'PENDING' ? 'Requested' : 'Started'}: {new Date(m.status === 'ACTIVE' && m.startedAt ? m.startedAt : m.createdAt).toLocaleDateString()}
               </div>
 
               <div style={{ display: 'flex', gap: '0.75rem', marginTop: 'auto' }}>
                 <button onClick={() => handleCancel(m.id)} style={{ flex: 1, padding: '0.5rem', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '4px', cursor: 'pointer' }}>
-                  Cancel Mentorship
+                  {m.status === 'PENDING' ? 'Cancel Request' : 'Cancel Mentorship'}
                 </button>
               </div>
             </div>

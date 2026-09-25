@@ -98,3 +98,21 @@ export async function fetchMentorMentorships() {
   if (!response.ok) throw new Error(data.message || 'Failed to fetch mentorships');
   return data.mentorships;
 }
+
+async function updateMentorshipRequest(id, action) {
+  const response = await fetch(`${API_BASE_URL}/mentorships/${id}/${action}`, {
+    method: 'PUT',
+    headers: getAuthHeaders()
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || `Failed to ${action} mentorship request`);
+  return data.mentorship;
+}
+
+export function acceptMentorship(id) {
+  return updateMentorshipRequest(id, 'accept');
+}
+
+export function rejectMentorship(id) {
+  return updateMentorshipRequest(id, 'reject');
+}

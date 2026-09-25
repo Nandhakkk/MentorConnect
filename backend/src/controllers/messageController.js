@@ -11,7 +11,7 @@ const verifyMentorshipAccess = async (mentorshipId, user) => {
       mentor: true
     }
   });
-  if (!mentorship) return null;
+  if (!mentorship || mentorship.status !== 'ACTIVE') return null;
 
   const studentUserId = mentorship.student?.userId;
   const mentorUserId = mentorship.mentor?.userId;

@@ -38,6 +38,24 @@ export async function fetchAdminMentors() {
   return data.mentors;
 }
 
+async function updateMentorApplication(id, action) {
+  const response = await fetch(`${API_BASE_URL}/admin/mentors/${id}/${action}`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || `Failed to ${action} mentor application`);
+  return data.mentor;
+}
+
+export function approveMentor(id) {
+  return updateMentorApplication(id, 'approve');
+}
+
+export function rejectMentor(id) {
+  return updateMentorApplication(id, 'reject');
+}
+
 export async function fetchAdminMentorships(status = 'ALL') {
   let url = `${API_BASE_URL}/admin/mentorships?status=${status}`;
   const response = await fetch(url, {

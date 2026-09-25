@@ -12,6 +12,8 @@ router.get('/student', mentorshipController.getStudentMentorships);
 router.delete('/:id', mentorshipController.cancelMentorship);
 
 // Mentor routes
-router.get('/mentor', mentorshipController.getMentorMentorships);
+router.get('/mentor', authMiddleware.requireApprovedMentor, mentorshipController.getMentorMentorships);
+router.put('/:id/accept', authMiddleware.requireApprovedMentor, mentorshipController.acceptMentorship);
+router.put('/:id/reject', authMiddleware.requireApprovedMentor, mentorshipController.rejectMentorship);
 
 module.exports = router;

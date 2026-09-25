@@ -5,7 +5,12 @@ const authMiddleware = require('../middleware/authMiddleware');
 
 router.use(authMiddleware.authenticateToken);
 
-router.get('/:mentorshipId', messageController.getMessages);
-router.post('/:mentorshipId', messageController.sendMessage);
+const requireApprovedMentorWhenMentor = (req, res, next) => {
+  if (req.user.role !== 'MENTOR') return next();
+  return authMiddleware.requireApprovedMentor(req, res, next);
+};
+
+router.get('/:mentorshipId', requireApprovedMentorWhenMentor, messageController.getMessages);
+router.post('/:mentorshipId', requireApprovedMentorWhenMentor, messageController.sendMessage);
 
 module.exports = router;

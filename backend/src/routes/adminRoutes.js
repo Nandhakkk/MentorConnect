@@ -10,6 +10,8 @@ router.use(authMiddleware.requireRole('ADMIN'));
 router.get('/dashboard-stats', adminController.getDashboardStats);
 router.get('/users', adminController.getUsers);
 router.get('/mentors', adminController.getMentors);
+router.put('/mentors/:id/approve', adminController.approveMentor);
+router.put('/mentors/:id/reject', adminController.rejectMentor);
 router.get('/mentorships', adminController.getMentorships);
 
 module.exports = router;
