@@ -38,22 +38,33 @@ export async function fetchAdminMentors() {
   return data.mentors;
 }
 
-async function updateMentorApplication(id, action) {
-  const response = await fetch(`${API_BASE_URL}/admin/mentors/${id}/${action}`, {
+export async function fetchMentorApplications(status = 'ALL') {
+  let url = `${API_BASE_URL}/admin/mentor-applications`;
+  if (status && status !== 'ALL') {
+    url += `?status=${status}`;
+  }
+  const response = await fetch(url, { headers: getAuthHeaders() });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to fetch mentor applications');
+  return data.applications;
+}
+
+export async function fetchMentorApplicationById(id) {
+  const response = await fetch(`${API_BASE_URL}/admin/mentor-applications/${id}`, { headers: getAuthHeaders() });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to fetch mentor application');
+  return data.application;
+}
+
+export async function updateMentorApplicationStatus(id, updateData) {
+  const response = await fetch(`${API_BASE_URL}/admin/mentor-applications/${id}/status`, {
     method: 'PUT',
     headers: getAuthHeaders(),
+    body: JSON.stringify(updateData)
   });
   const data = await response.json();
-  if (!response.ok) throw new Error(data.message || `Failed to ${action} mentor application`);
-  return data.mentor;
-}
-
-export function approveMentor(id) {
-  return updateMentorApplication(id, 'approve');
-}
-
-export function rejectMentor(id) {
-  return updateMentorApplication(id, 'reject');
+  if (!response.ok) throw new Error(data.message || 'Failed to update application status');
+  return data.application;
 }
 
 export async function fetchAdminMentorships(status = 'ALL') {

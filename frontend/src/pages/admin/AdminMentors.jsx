@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { fetchAdminMentors, approveMentor, rejectMentor } from '../../services/adminService';
+import { fetchAdminMentors } from '../../services/adminService';
 
 export default function AdminMentors() {
   const [mentors, setMentors] = useState([]);
@@ -24,23 +24,7 @@ export default function AdminMentors() {
     loadMentors();
   }, []);
 
-  const updateApplication = async (action) => {
-    if (!selectedMentor) return;
-
-    try {
-      setActioning(true);
-      setError('');
-      const updated = action === 'approve'
-        ? await approveMentor(selectedMentor.id)
-        : await rejectMentor(selectedMentor.id);
-      setMentors((current) => current.map((mentor) => mentor.id === updated.id ? updated : mentor));
-      setSelectedMentor(updated);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setActioning(false);
-    }
-  };
+  const updateApplication = () => {}; // Replaced by Mentor Applications Portal
 
   const statusClass = (status) => {
     if (status === 'APPROVED') return 'badge-success';
@@ -120,22 +104,12 @@ export default function AdminMentors() {
             </div>
             <span className={`badge ${statusClass(selectedMentor.status)}`}>{selectedMentor.status}</span>
           </div>
-
-          {selectedMentor.status === 'PENDING' && (
-            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.25rem' }}>
-              <button type="button" className="btn btn-primary" disabled={actioning} onClick={() => updateApplication('approve')}>
-                {actioning ? 'Updating...' : 'Approve'}
-              </button>
-              <button
-                type="button"
-                disabled={actioning}
-                onClick={() => updateApplication('reject')}
-                style={{ padding: '0.65rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid #ef4444', background: 'transparent', color: '#f87171', cursor: actioning ? 'not-allowed' : 'pointer', fontWeight: 600 }}
-              >
-                Reject
-              </button>
-            </div>
-          )}
+          
+          <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius-sm)' }}>
+            <p style={{ margin: 0, color: 'var(--text-secondary)' }}>
+              To review mentor applications, please use the new <a href="/admin/mentor-applications" style={{ color: 'var(--accent-primary)', textDecoration: 'underline' }}>Mentor Applications Portal</a>.
+            </p>
+          </div>
         </div>
       )}
     </div>

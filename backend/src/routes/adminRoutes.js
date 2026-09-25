@@ -10,8 +10,11 @@ router.use(authMiddleware.requireRole('ADMIN'));
 router.get('/dashboard-stats', adminController.getDashboardStats);
 router.get('/users', adminController.getUsers);
 router.get('/mentors', adminController.getMentors);
-router.put('/mentors/:id/approve', adminController.approveMentor);
-router.put('/mentors/:id/reject', adminController.rejectMentor);
 router.get('/mentorships', adminController.getMentorships);
+
+// Professional Mentor Verification Portal routes
+router.get('/mentor-applications', adminController.getMentorApplications);
+router.get('/mentor-applications/:id', adminController.getMentorApplicationById);
+router.put('/mentor-applications/:id/status', adminController.updateMentorApplicationStatus);
 
 module.exports = router;

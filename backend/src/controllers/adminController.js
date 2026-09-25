@@ -112,45 +112,142 @@ const getMentors = async (req, res) => {
   }
 };
 
-const updateMentorStatus = async (req, res, status) => {
+/**
+ * GET /api/admin/mentor-applications
+ * Returns professional mentor applications.
+ */
+const getMentorApplications = async (req, res) => {
   try {
-    const mentor = await prisma.mentorProfile.findUnique({
-      where: { id: req.params.id },
-      include: { user: { select: { id: true, name: true, email: true } } }
-    });
-
-    if (!mentor) {
-      return res.status(404).json({ status: 'error', message: 'Mentor application not found.' });
+    const { status } = req.query;
+    
+    let whereClause = {};
+    if (status && status !== 'ALL') {
+      whereClause.status = status;
     }
 
-    if (mentor.status !== 'PENDING') {
-      return res.status(409).json({
-        status: 'error',
-        message: `Only pending mentor applications can be ${status.toLowerCase()}.`
-      });
-    }
-
-    const updatedMentor = await prisma.mentorProfile.update({
-      where: { id: mentor.id },
-      data: { status },
-      include: { user: { select: { id: true, name: true, email: true } } }
+    const applications = await prisma.mentorApplication.findMany({
+      where: whereClause,
+      include: {
+        mentor: {
+          include: { user: { select: { name: true, email: true } } }
+        },
+        aiScreening: true
+      },
+      orderBy: { createdAt: 'desc' }
     });
 
-    return res.status(200).json({
-      status: 'success',
-      message: `Mentor application ${status.toLowerCase()} successfully.`,
-      mentor: updatedMentor
-    });
+    return res.status(200).json({ status: 'success', applications });
   } catch (err) {
-    return res.status(500).json({ status: 'error', message: 'Failed to update mentor application.', details: err.message });
+    return res.status(500).json({ status: 'error', message: 'Failed to fetch mentor applications.', details: err.message });
   }
 };
 
-/** PUT /api/admin/mentors/:id/approve */
-const approveMentor = (req, res) => updateMentorStatus(req, res, 'APPROVED');
+/**
+ * GET /api/admin/mentor-applications/:id
+ * Returns detailed application view.
+ */
+const getMentorApplicationById = async (req, res) => {
+  try {
+    const application = await prisma.mentorApplication.findUnique({
+      where: { id: req.params.id },
+      include: {
+        mentor: {
+          include: { user: { select: { name: true, email: true, dateOfBirth: true, phone: true, profileImage: true } } }
+        },
+        credentials: true,
+        aiScreening: true
+      }
+    });
 
-/** PUT /api/admin/mentors/:id/reject */
-const rejectMentor = (req, res) => updateMentorStatus(req, res, 'REJECTED');
+    if (!application) {
+      return res.status(404).json({ status: 'error', message: 'Application not found.' });
+    }
+
+    return res.status(200).json({ status: 'success', application });
+  } catch (err) {
+    return res.status(500).json({ status: 'error', message: 'Failed to fetch mentor application.', details: err.message });
+  }
+};
+
+/**
+ * PUT /api/admin/mentor-applications/:id/status
+ * Updates the application status and propagates to mentor profile if approved.
+ */
+const updateMentorApplicationStatus = async (req, res) => {
+  try {
+    const { status, reviewNotes, rejectionReason } = req.body;
+    
+    const validStatuses = ['PENDING', 'AI_SCREENED', 'UNDER_REVIEW', 'APPROVED', 'REJECTED', 'SUSPENDED'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ status: 'error', message: 'Invalid status.' });
+    }
+
+    const application = await prisma.mentorApplication.findUnique({
+      where: { id: req.params.id },
+      include: { mentor: true }
+    });
+
+    if (!application) {
+      return res.status(404).json({ status: 'error', message: 'Application not found.' });
+    }
+
+    // Status transition rules (simplified enforcement)
+    const current = application.status;
+    const isApproval = status === 'APPROVED';
+    const isRejection = status === 'REJECTED';
+    const isSuspension = status === 'SUSPENDED';
+
+    if (isApproval && current !== 'UNDER_REVIEW') {
+      return res.status(400).json({ status: 'error', message: 'Only UNDER_REVIEW applications can be APPROVED.' });
+    }
+    if (isRejection && current !== 'UNDER_REVIEW') {
+      return res.status(400).json({ status: 'error', message: 'Only UNDER_REVIEW applications can be REJECTED.' });
+    }
+    if (isSuspension && current !== 'APPROVED') {
+      return res.status(400).json({ status: 'error', message: 'Only APPROVED applications can be SUSPENDED.' });
+    }
+    if (status === 'UNDER_REVIEW' && current !== 'AI_SCREENED' && current !== 'PENDING') {
+      return res.status(400).json({ status: 'error', message: 'Only PENDING or AI_SCREENED applications can move to UNDER_REVIEW.' });
+    }
+
+    const updatedApp = await prisma.$transaction(async (tx) => {
+      const updated = await tx.mentorApplication.update({
+        where: { id: application.id },
+        data: {
+          status,
+          reviewNotes: reviewNotes !== undefined ? reviewNotes : application.reviewNotes,
+          rejectionReason: rejectionReason !== undefined ? rejectionReason : application.rejectionReason,
+          reviewedAt: isApproval || isRejection ? new Date() : application.reviewedAt,
+          reviewerId: req.user.id
+        }
+      });
+
+      if (isApproval) {
+        await tx.mentorProfile.update({
+          where: { id: application.mentorId },
+          data: {
+            status: 'APPROVED',
+            mentorType: 'PROFESSIONAL',
+            verifiedAt: new Date()
+          }
+        });
+      } else if (isRejection || isSuspension) {
+        await tx.mentorProfile.update({
+          where: { id: application.mentorId },
+          data: {
+            status: isSuspension ? 'REJECTED' : 'REJECTED' // or leave PENDING/REJECTED. For now, REJECTED.
+          }
+        });
+      }
+
+      return updated;
+    });
+
+    return res.status(200).json({ status: 'success', message: 'Application status updated.', application: updatedApp });
+  } catch (err) {
+    return res.status(500).json({ status: 'error', message: 'Failed to update application status.', details: err.message });
+  }
+};
 
 /**
  * GET /api/admin/mentorships
@@ -184,7 +281,8 @@ module.exports = {
   getDashboardStats,
   getUsers,
   getMentors,
-  approveMentor,
-  rejectMentor,
-  getMentorships
+  getMentorships,
+  getMentorApplications,
+  getMentorApplicationById,
+  updateMentorApplicationStatus
 };

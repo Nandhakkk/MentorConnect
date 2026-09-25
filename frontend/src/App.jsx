@@ -36,6 +36,8 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminMentors from './pages/admin/AdminMentors';
 import AdminMentorships from './pages/admin/AdminMentorships';
+import AdminMentorApplications from './pages/admin/AdminMentorApplications';
+import AdminMentorApplicationReview from './pages/admin/AdminMentorApplicationReview';
 import GuardianDashboard from './pages/guardian/GuardianDashboard';
 
 // Placeholder pages for upcoming features
@@ -124,6 +126,8 @@ export default function App() {
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="users" element={<AdminUsers />} />
             <Route path="mentors" element={<AdminMentors />} />
+            <Route path="mentor-applications" element={<AdminMentorApplications />} />
+            <Route path="mentor-applications/:id" element={<AdminMentorApplicationReview />} />
             <Route path="mentorships" element={<AdminMentorships />} />
             <Route index element={<Navigate to="dashboard" replace />} />
           </Route>
