@@ -37,3 +37,15 @@ export async function updateMyApplication(applicationData, token) {
   if (!response.ok) throw new Error(data.message || 'Failed to update mentor application.');
   return data.application;
 }
+
+export async function screenApplication(token) {
+  const response = await fetch(`${API_BASE_URL}/mentor-applications/me/screen`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to run AI screening.');
+  return data.screeningResult;
+}

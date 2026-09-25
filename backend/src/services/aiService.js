@@ -138,6 +138,52 @@ ${question}
 
 Your Answer:`;
   }
+
+  /**
+   * Build the AI prompt for screening a professional mentor application.
+   * @param {object} application - The application object with mentor profile and credentials.
+   * @returns {string} - Assembled prompt
+   */
+  buildScreeningPrompt(application) {
+    const dataString = JSON.stringify({
+      professionalSummary: application.professionalSummary,
+      expertise: application.expertise,
+      experienceYears: application.experience,
+      teachingExperienceYears: application.teachingExperience,
+      linkedinUrl: application.linkedinUrl,
+      languages: application.languages,
+      credentials: application.credentials?.map(c => ({ title: c.title, type: c.type })) || []
+    }, null, 2);
+
+    return `You are an AI Preliminary Screener for a professional mentor application platform.
+Your job is to objectively analyze the provided application data and produce a structured JSON report for the human administrator.
+You are NOT the final decision maker. Do not approve, reject, or suspend anyone.
+Do not infer facts not present. Flag missing info as concerns for human review.
+
+Evaluate:
+A. Profile completeness (COMPLETE, PARTIAL, INCOMPLETE)
+B. Expertise relevance (STRONG, MODERATE, WEAK)
+C. Experience Assessment (STRONG, MODERATE, LIMITED)
+D. Teaching Assessment (STRONG, MODERATE, LIMITED)
+E. Credential Assessment (SUFFICIENT, NEEDS_REVIEW, MISSING)
+
+You must output valid JSON matching this exact structure:
+{
+  "overallAssessment": "A concise summary of the applicant.",
+  "profileCompleteness": "COMPLETE",
+  "expertiseRelevance": "STRONG",
+  "experienceAssessment": "STRONG",
+  "teachingAssessment": "STRONG",
+  "credentialAssessment": "NEEDS_REVIEW",
+  "strengths": ["string"],
+  "concerns": ["string"],
+  "verificationItems": ["string"],
+  "recommendation": "SHORTLIST_FOR_REVIEW | NEEDS_MORE_INFORMATION | HIGHER_REVIEW_ATTENTION"
+}
+
+Application Data:
+${dataString}`;
+  }
 }
 
 module.exports = new AIService();

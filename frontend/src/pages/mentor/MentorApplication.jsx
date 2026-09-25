@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getMyApplication, createApplication, updateMyApplication } from '../../services/mentorApplicationService';
+import { getMyApplication, createApplication, updateMyApplication, screenApplication } from '../../services/mentorApplicationService';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -20,6 +20,7 @@ export default function MentorApplication() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [screening, setScreening] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -77,6 +78,25 @@ export default function MentorApplication() {
     }
   };
 
+  const handleScreening = async () => {
+    try {
+      setScreening(true);
+      setError('');
+      setSuccess('');
+      const screeningResult = await screenApplication(token);
+      setApplication(prev => ({
+        ...prev,
+        status: 'AI_SCREENED',
+        aiScreening: screeningResult
+      }));
+      setSuccess('AI Preliminary Screening completed.');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setScreening(false);
+    }
+  };
+
   if (loading) return <div className="page-content">Loading application...</div>;
 
   const isReadOnly = application && application.status !== 'PENDING' && application.status !== 'REJECTED';
@@ -114,6 +134,69 @@ export default function MentorApplication() {
             {isReadOnly && (
               <div style={{ marginTop: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
                 Your application is currently {application.status.replace('_', ' ').toLowerCase()}. The fields below are locked while not in PENDING status.
+              </div>
+            )}
+          </div>
+        )}
+
+        {application && (application.status === 'PENDING' || application.status === 'AI_SCREENED') && (
+          <div style={{ marginBottom: '2rem', padding: '1.5rem', borderRadius: 'var(--radius-md)', background: 'rgba(99, 102, 241, 0.1)', border: '1px solid var(--accent-primary)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div>
+                <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>AI Preliminary Screening</h3>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1rem', maxWidth: '600px' }}>
+                  Run an AI-generated assessment for administrative review. This helps our team verify your application faster. 
+                  Final mentor approval is performed by an administrator.
+                </p>
+              </div>
+              {application.status === 'PENDING' && (
+                <button className="btn btn-primary" onClick={handleScreening} disabled={screening}>
+                  {screening ? 'Screening...' : 'Run AI Screening'}
+                </button>
+              )}
+            </div>
+
+            {application.aiScreening && (
+              <div style={{ marginTop: '1rem', padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius-sm)' }}>
+                <h4 style={{ marginBottom: '0.5rem', color: 'var(--text-primary)' }}>Screening Result</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                  <div><strong>Completeness:</strong> {application.aiScreening.structuredFindings?.profileCompleteness}</div>
+                  <div><strong>Expertise:</strong> {application.aiScreening.structuredFindings?.expertiseRelevance}</div>
+                  <div><strong>Experience:</strong> {application.aiScreening.structuredFindings?.experienceAssessment}</div>
+                  <div><strong>Teaching:</strong> {application.aiScreening.structuredFindings?.teachingAssessment}</div>
+                </div>
+                
+                {application.aiScreening.structuredFindings?.strengths?.length > 0 && (
+                  <div style={{ marginBottom: '0.5rem' }}>
+                    <strong style={{ color: '#10b981', fontSize: '0.9rem' }}>Strengths:</strong>
+                    <ul style={{ paddingLeft: '1.2rem', margin: '0.25rem 0', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                      {application.aiScreening.structuredFindings.strengths.map((s, i) => <li key={i}>{s}</li>)}
+                    </ul>
+                  </div>
+                )}
+                
+                {application.aiScreening.riskFlags?.concerns?.length > 0 && (
+                  <div style={{ marginBottom: '0.5rem' }}>
+                    <strong style={{ color: '#ef4444', fontSize: '0.9rem' }}>Concerns / Missing Info:</strong>
+                    <ul style={{ paddingLeft: '1.2rem', margin: '0.25rem 0', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                      {application.aiScreening.riskFlags.concerns.map((c, i) => <li key={i}>{c}</li>)}
+                    </ul>
+                  </div>
+                )}
+                
+                {application.aiScreening.riskFlags?.verificationItems?.length > 0 && (
+                  <div style={{ marginBottom: '0.5rem' }}>
+                    <strong style={{ color: '#f59e0b', fontSize: '0.9rem' }}>Admin Verification Items:</strong>
+                    <ul style={{ paddingLeft: '1.2rem', margin: '0.25rem 0', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                      {application.aiScreening.riskFlags.verificationItems.map((v, i) => <li key={i}>{v}</li>)}
+                    </ul>
+                  </div>
+                )}
+
+                <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)', fontSize: '0.9rem' }}>
+                  <strong style={{ color: 'var(--text-primary)' }}>Recommendation to Admin:</strong>{' '}
+                  <span style={{ color: 'var(--text-secondary)' }}>{application.aiScreening.recommendation.replace(/_/g, ' ')}</span>
+                </div>
               </div>
             )}
           </div>

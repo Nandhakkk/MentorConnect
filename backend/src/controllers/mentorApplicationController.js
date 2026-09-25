@@ -1,4 +1,5 @@
 const prisma = require('../config/db');
+const aiService = require('../services/aiService');
 
 /**
  * Helper to ensure the mentor profile exists
@@ -135,8 +136,102 @@ const updateMyApplication = async (req, res) => {
   }
 };
 
+/**
+ * POST /api/mentor-applications/me/screen
+ * Runs AI preliminary screening on the mentor's application.
+ */
+const screenApplication = async (req, res) => {
+  try {
+    const mentorId = await getMentorProfileId(req.user.id);
+
+    const application = await prisma.mentorApplication.findFirst({
+      where: { mentorId },
+      orderBy: { createdAt: 'desc' },
+      include: { credentials: true }
+    });
+
+    if (!application) {
+      return res.status(404).json({ status: 'error', message: 'No application found to screen.' });
+    }
+
+    if (application.status !== 'PENDING' && application.status !== 'AI_SCREENED') {
+      return res.status(400).json({ status: 'error', message: `Cannot run screening when status is ${application.status}.` });
+    }
+
+    // Call AI
+    const prompt = aiService.buildScreeningPrompt(application);
+    const rawResponse = await aiService.generateText(prompt);
+
+    // Extract JSON from raw response
+    let jsonResult;
+    try {
+      const match = rawResponse.match(/\{[\s\S]*\}/);
+      if (match) {
+        jsonResult = JSON.parse(match[0]);
+      } else {
+        throw new Error('No valid JSON block found in AI response.');
+      }
+    } catch (parseError) {
+      return res.status(502).json({ status: 'error', message: 'Failed to parse AI screening response.', details: parseError.message });
+    }
+
+    // Transaction to update or create screening result and update app status
+    const screeningResult = await prisma.$transaction(async (tx) => {
+      const existingScreening = await tx.aIScreeningResult.findUnique({
+        where: { applicationId: application.id }
+      });
+
+      let sr;
+      const data = {
+        screeningStatus: 'COMPLETED',
+        recommendation: jsonResult.recommendation || 'NEEDS_MORE_INFORMATION',
+        structuredFindings: {
+          overallAssessment: jsonResult.overallAssessment,
+          profileCompleteness: jsonResult.profileCompleteness,
+          expertiseRelevance: jsonResult.expertiseRelevance,
+          experienceAssessment: jsonResult.experienceAssessment,
+          teachingAssessment: jsonResult.teachingAssessment,
+          credentialAssessment: jsonResult.credentialAssessment,
+          strengths: jsonResult.strengths || []
+        },
+        riskFlags: {
+          concerns: jsonResult.concerns || [],
+          verificationItems: jsonResult.verificationItems || []
+        },
+        modelInfo: aiService.modelName
+      };
+
+      if (existingScreening) {
+        sr = await tx.aIScreeningResult.update({
+          where: { id: existingScreening.id },
+          data
+        });
+      } else {
+        sr = await tx.aIScreeningResult.create({
+          data: {
+            ...data,
+            applicationId: application.id
+          }
+        });
+      }
+
+      await tx.mentorApplication.update({
+        where: { id: application.id },
+        data: { status: 'AI_SCREENED' }
+      });
+
+      return sr;
+    });
+
+    return res.status(200).json({ status: 'success', message: 'AI Screening completed successfully.', screeningResult });
+  } catch (err) {
+    return res.status(500).json({ status: 'error', message: 'Failed to run AI screening.', details: err.message });
+  }
+};
+
 module.exports = {
   getMyApplication,
   createApplication,
-  updateMyApplication
+  updateMyApplication,
+  screenApplication
 };

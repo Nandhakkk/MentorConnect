@@ -10,5 +10,6 @@ router.use(authMiddleware.requireRole('MENTOR'));
 router.get('/me', mentorApplicationController.getMyApplication);
 router.post('/', mentorApplicationController.createApplication);
 router.put('/me', mentorApplicationController.updateMyApplication);
+router.post('/me/screen', mentorApplicationController.screenApplication);
 
 module.exports = router;
