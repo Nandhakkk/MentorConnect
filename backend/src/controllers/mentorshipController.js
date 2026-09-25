@@ -20,12 +20,22 @@ const createMentorship = async (req, res) => {
       return res.status(400).json({ status: 'error', message: 'mentorId is required.' });
     }
 
-    // Check if mentor exists
+    // Check if mentor is approved, professional, and eligible
     const mentor = await prisma.mentorProfile.findFirst({
-      where: { id: mentorId, status: 'APPROVED' }
+      where: { 
+        id: mentorId, 
+        status: 'APPROVED', 
+        mentorType: 'PROFESSIONAL',
+        isAvailable: true 
+      },
+      include: { user: true }
     });
     if (!mentor) {
       return res.status(404).json({ status: 'error', message: 'Mentor not found.' });
+    }
+
+    if (mentor.user.isSuspended) {
+      return res.status(403).json({ status: 'error', message: 'Mentor is suspended.' });
     }
 
     // Prevent self-mentorship (if user somehow has both profiles or tests it)
@@ -162,7 +172,10 @@ const cancelMentorship = async (req, res) => {
       return res.status(404).json({ status: 'error', message: 'Mentorship not found or access denied.' });
     }
 
-    await prisma.mentorship.delete({ where: { id: req.params.id } });
+    await prisma.mentorship.update({ 
+      where: { id: req.params.id },
+      data: { status: 'CANCELLED' }
+    });
 
     return res.status(200).json({ status: 'success', message: 'Mentorship cancelled successfully.' });
   } catch (err) {
@@ -201,11 +214,56 @@ const getMentorMentorships = async (req, res) => {
   }
 };
 
+/**
+ * GET /api/mentorships/:id
+ * Return a specific mentorship (allowed for both STUDENT and MENTOR involved).
+ */
+const getMentorshipById = async (req, res) => {
+  try {
+    const mentorship = await prisma.mentorship.findUnique({
+      where: { id: req.params.id },
+      include: {
+        mentor: {
+          include: {
+            user: { select: { name: true, email: true } },
+            topics: { include: { topic: true } },
+            availabilities: true
+          }
+        },
+        student: {
+          include: {
+            user: { select: { name: true, email: true } }
+          }
+        }
+      }
+    });
+
+    if (!mentorship) {
+      return res.status(404).json({ status: 'error', message: 'Mentorship not found.' });
+    }
+
+    const { role, studentProfile, mentorProfile } = req.user;
+    const isAuthorized = 
+      (role === 'STUDENT' && mentorship.studentId === studentProfile?.id) ||
+      (role === 'MENTOR' && mentorship.mentorId === mentorProfile?.id) ||
+      role === 'ADMIN';
+
+    if (!isAuthorized) {
+      return res.status(403).json({ status: 'error', message: 'Access denied.' });
+    }
+
+    return res.status(200).json({ status: 'success', mentorship });
+  } catch (err) {
+    return res.status(500).json({ status: 'error', message: 'Failed to fetch mentorship.', details: err.message });
+  }
+};
+
 module.exports = {
   createMentorship,
   getStudentMentorships,
   cancelMentorship,
   getMentorMentorships,
   acceptMentorship,
-  rejectMentorship
+  rejectMentorship,
+  getMentorshipById
 };

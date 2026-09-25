@@ -6,6 +6,9 @@ const authMiddleware = require('../middleware/authMiddleware');
 // All mentorship routes require authentication
 router.use(authMiddleware.authenticateToken);
 
+// Common route
+router.get('/:id', mentorshipController.getMentorshipById);
+
 // Student routes
 router.post('/', mentorshipController.createMentorship);
 router.get('/student', mentorshipController.getStudentMentorships);

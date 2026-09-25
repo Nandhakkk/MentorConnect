@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { fetchStudentMentorships, cancelMentorship } from '../../services/mentorService';
 import DashboardCard from '../../components/DashboardCard';
 
@@ -98,6 +99,11 @@ export default function StudentMentors() {
               </div>
 
               <div style={{ display: 'flex', gap: '0.75rem', marginTop: 'auto' }}>
+                {m.status === 'ACTIVE' && (
+                  <Link to={`/student/mentorships/${m.id}/book`} className="btn btn-primary" style={{ flex: 1, textAlign: 'center', padding: '0.5rem', textDecoration: 'none' }}>
+                    Book Session
+                  </Link>
+                )}
                 <button onClick={() => handleCancel(m.id)} style={{ flex: 1, padding: '0.5rem', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '4px', cursor: 'pointer' }}>
                   {m.status === 'PENDING' ? 'Cancel Request' : 'Cancel Mentorship'}
                 </button>

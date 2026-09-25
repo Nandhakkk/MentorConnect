@@ -67,9 +67,9 @@ const createSession = async (req, res) => {
     }
 
     const studentProfile = req.user.studentProfile;
-    const { mentorshipId, scheduledAt, duration } = req.body;
+    const { mentorshipId, scheduledAt, duration, topic } = req.body;
 
-    if (!mentorshipId || !scheduledAt || !duration) {
+    if (!mentorshipId || !scheduledAt || !duration || !topic) {
       return res.status(400).json({ status: 'error', message: 'Missing required fields.' });
     }
 
@@ -85,7 +85,7 @@ const createSession = async (req, res) => {
         studentId: studentProfile.id,
         status: 'ACTIVE'
       },
-      include: { mentor: { include: { availabilities: true } } }
+      include: { mentor: { include: { availabilities: true, user: true } } }
     });
 
     if (!mentorship) {
@@ -94,21 +94,27 @@ const createSession = async (req, res) => {
 
     const mentor = mentorship.mentor;
 
-    // 4. Check if mentor is generally available
-    if (!mentor.isAvailable) {
-      return res.status(400).json({ status: 'error', message: 'Mentor is currently unavailable for new sessions.' });
+    // 4. Check if mentor is generally available and eligible
+    if (!mentor.isAvailable || mentor.user.isSuspended || mentor.status !== 'APPROVED') {
+      return res.status(400).json({ status: 'error', message: 'Mentor is currently unavailable or not eligible for new sessions.' });
+    }
+    
+    // 4.1 Validate duration
+    const dur = parseInt(duration, 10);
+    if (isNaN(dur) || dur <= 0 || dur > 480) {
+      return res.status(400).json({ status: 'error', message: 'Invalid duration.' });
     }
 
     // 5. Check if selected time is within availability slots
-    const dayOfWeek = getDayOfWeekString(scheduledDate);
+    // Explicitly parse the requested time into IST for comparison against the mentor's locally-defined availability.
+    const istString = scheduledDate.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+    const istDate = new Date(istString);
+    const dayOfWeek = getDayOfWeekString(istDate);
     
-    // Extract hours and minutes for comparison
-    // We assume the scheduled time is passed in local/expected timezone, so we use getUTCHours or getHours based on setup.
-    // For simplicity, let's treat the date object directly and extract HH:mm in UTC.
-    const scheduledHours = scheduledDate.getUTCHours();
-    const scheduledMinutes = scheduledDate.getUTCMinutes();
+    const scheduledHours = istDate.getHours();
+    const scheduledMinutes = istDate.getMinutes();
     const startMins = scheduledHours * 60 + scheduledMinutes;
-    const endMins = startMins + parseInt(duration, 10);
+    const endMins = startMins + dur;
 
     const isWithinSlot = mentor.availabilities.some(slot => {
       if (slot.dayOfWeek.toUpperCase() !== dayOfWeek) return false;
@@ -126,7 +132,7 @@ const createSession = async (req, res) => {
 
     // 6. Check for conflicting sessions for this mentor
     // We need to ensure that the mentor doesn't have another session overlapping.
-    const scheduledEnd = new Date(scheduledDate.getTime() + duration * 60000);
+    const scheduledEnd = new Date(scheduledDate.getTime() + dur * 60000);
     
     const conflictingSessions = await prisma.session.findMany({
       where: {
@@ -147,17 +153,41 @@ const createSession = async (req, res) => {
       return res.status(400).json({ status: 'error', message: 'This time slot is already booked.' });
     }
 
-    // Create session
-    const session = await prisma.session.create({
-      data: {
-        mentorshipId,
-        scheduledAt: scheduledDate,
-        duration: parseInt(duration, 10),
-        status: 'SCHEDULED'
-      }
+    // 7. Calculate authoritative price server-side
+    const hourlyFee = mentor.sessionFee || 0;
+    const amount = (hourlyFee * dur) / 60;
+    const platformFee = amount * 0.1;
+    const mentorAmount = amount - platformFee;
+
+    // 8. Create session and payment in transaction
+    const session = await prisma.$transaction(async (tx) => {
+      const sess = await tx.session.create({
+        data: {
+          mentorshipId,
+          scheduledAt: scheduledDate,
+          duration: dur,
+          topic: topic.trim(),
+          status: 'SCHEDULED'
+        }
+      });
+
+      const payment = await tx.payment.create({
+        data: {
+          studentId: studentProfile.id,
+          mentorId: mentor.id,
+          sessionId: sess.id,
+          amount: parseFloat(amount.toFixed(2)),
+          platformFee: parseFloat(platformFee.toFixed(2)),
+          mentorAmount: parseFloat(mentorAmount.toFixed(2)),
+          currency: 'INR',
+          status: 'CREATED'
+        }
+      });
+
+      return { ...sess, payment };
     });
 
-    return res.status(201).json({ status: 'success', message: 'Session booked successfully.', session });
+    return res.status(201).json({ status: 'success', message: 'Session selected — payment required.', session });
   } catch (err) {
     return res.status(500).json({ status: 'error', message: 'Failed to book session.', details: err.message });
   }

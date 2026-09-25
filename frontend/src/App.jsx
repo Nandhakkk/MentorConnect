@@ -20,6 +20,7 @@ import GoalDetails from './pages/student/GoalDetails';
 import MentorDiscovery from './pages/student/MentorDiscovery';
 import PublicMentorProfile from './pages/student/PublicMentorProfile';
 import StudentMentors from './pages/student/StudentMentors';
+import BookSession from './pages/student/BookSession';
 import StudentSessions from './pages/student/StudentSessions';
 import StudentMessages from './pages/student/StudentMessages';
 import StudentAIAssistant from './pages/student/StudentAIAssistant';
@@ -88,6 +89,7 @@ export default function App() {
             <Route path="mentor" element={<MentorDiscovery />} />
             <Route path="mentor/:id" element={<PublicMentorProfile />} />
             <Route path="mentorships" element={<StudentMentors />} />
+            <Route path="mentorships/:id/book" element={<BookSession />} />
             <Route path="sessions" element={<StudentSessions />} />
             <Route path="messages" element={<StudentMessages />} />
             <Route path="ai" element={<StudentAIAssistant />} />
