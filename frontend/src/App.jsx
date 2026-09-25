@@ -53,6 +53,8 @@ import AdminComplaints from './pages/admin/AdminComplaints';
 import AdminComplaintReview from './pages/admin/AdminComplaintReview';
 import AdminMentorApplications from './pages/admin/AdminMentorApplications';
 import AdminMentorApplicationReview from './pages/admin/AdminMentorApplicationReview';
+import AdminPeerMentorApplications from './pages/admin/AdminPeerMentorApplications';
+import AdminPeerMentorApplicationReview from './pages/admin/AdminPeerMentorApplicationReview';
 import GuardianDashboard from './pages/guardian/GuardianDashboard';
 
 // Placeholder pages for upcoming features
@@ -162,6 +164,8 @@ export default function App() {
             <Route path="mentorships" element={<AdminMentorships />} />
             <Route path="complaints" element={<AdminComplaints />} />
             <Route path="complaints/:id" element={<AdminComplaintReview />} />
+            <Route path="peer-mentor-applications" element={<AdminPeerMentorApplications />} />
+            <Route path="peer-mentor-applications/:id" element={<AdminPeerMentorApplicationReview />} />
             <Route index element={<Navigate to="dashboard" replace />} />
           </Route>
 

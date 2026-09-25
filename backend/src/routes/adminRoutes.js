@@ -25,4 +25,9 @@ router.put('/complaints/:id/status', adminController.updateComplaintStatus);
 // User Suspension
 router.put('/users/:userId/suspend', adminController.toggleUserSuspension);
 
+// Peer Mentor Applications
+router.get('/peer-mentor-applications', adminController.getPeerMentorApplications);
+router.get('/peer-mentor-applications/:id', adminController.getPeerMentorApplicationById);
+router.put('/peer-mentor-applications/:id/status', adminController.updatePeerMentorApplicationStatus);
+
 module.exports = router;

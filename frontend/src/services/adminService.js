@@ -76,3 +76,32 @@ export async function fetchAdminMentorships(status = 'ALL') {
   if (!response.ok) throw new Error(data.message || 'Failed to fetch mentorships');
   return data.mentorships;
 }
+
+export async function fetchPeerMentorApplications(status = 'ALL') {
+  let url = `${API_BASE_URL}/admin/peer-mentor-applications`;
+  if (status && status !== 'ALL') {
+    url += `?status=${status}`;
+  }
+  const response = await fetch(url, { headers: getAuthHeaders() });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to fetch peer mentor applications');
+  return data.applications;
+}
+
+export async function fetchPeerMentorApplicationById(id) {
+  const response = await fetch(`${API_BASE_URL}/admin/peer-mentor-applications/${id}`, { headers: getAuthHeaders() });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to fetch peer mentor application');
+  return data.application;
+}
+
+export async function updatePeerMentorApplicationStatus(id, updateData) {
+  const response = await fetch(`${API_BASE_URL}/admin/peer-mentor-applications/${id}/status`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(updateData)
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to update peer mentor application status');
+  return data.application;
+}
