@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import BackLink from '../../components/BackLink';
 import PageHeader from '../../components/PageHeader';
 import { bookSession } from '../../services/sessionService';
+import { createPaymentOrder, verifyPayment } from '../../services/paymentService';
+import { useAuth } from '../../context/AuthContext';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 const getAuthHeaders = () => {
@@ -13,6 +15,7 @@ const getAuthHeaders = () => {
 export default function BookSession() {
   const { id } = useParams(); // Mentorship ID
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [mentorship, setMentorship] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -60,18 +63,76 @@ export default function BookSession() {
     
     try {
       setBookingLoading(true);
-      // Combine date and time for backend (Assumed local timezone sending to UTC)
       const scheduledAt = new Date(`${selectedDate}T${selectedTime}:00`).toISOString();
       
-      await bookSession({
+      const { session } = await bookSession({
         mentorshipId: id,
         topic: selectedTopic,
         scheduledAt,
         duration: parseInt(duration, 10)
       });
       
-      alert('Session selected — payment required. Redirecting to sessions...');
-      navigate('/student/sessions');
+      // Now that the session is booked (and Payment record created in CREATED state),
+      // we initiate the Razorpay order
+      setBookingError('Verifying session... Please wait for the payment gateway.');
+      const orderRes = await createPaymentOrder(session.id);
+      
+      // Load Razorpay Script dynamically if needed (you might prefer to load it in index.html)
+      // Here we assume window.Razorpay will be available, but let's dynamically load it just in case
+      const loadRazorpay = () => new Promise((resolve) => {
+        if (window.Razorpay) return resolve(true);
+        const script = document.createElement('script');
+        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        script.onload = () => resolve(true);
+        script.onerror = () => resolve(false);
+        document.body.appendChild(script);
+      });
+
+      const loaded = await loadRazorpay();
+      if (!loaded) {
+        setBookingError('Failed to load payment gateway. Please check your network.');
+        setBookingLoading(false);
+        return;
+      }
+      
+      const options = {
+        key: orderRes.key, 
+        amount: orderRes.amount, 
+        currency: orderRes.currency,
+        name: "MentorConnect",
+        description: `Session with ${mentor.user.name}`,
+        order_id: orderRes.orderId,
+        handler: async function (response) {
+           try {
+              setBookingError('Verifying payment... Please do not close the window.');
+              await verifyPayment({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                sessionId: session.id
+              });
+              alert('Payment verified! Session scheduled.');
+              navigate('/student/sessions');
+           } catch (verifyErr) {
+              setBookingError(verifyErr.message || 'Payment verification failed. Please try again.');
+           }
+        },
+        prefill: {
+          name: user?.name,
+          email: user?.email
+        },
+        theme: {
+          color: "#6366f1"
+        }
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', function (response){
+          setBookingError(response.error.description || 'Payment failed.');
+      });
+      rzp.open();
+      
+      setBookingError('');
     } catch (err) {
       setBookingError(err.message);
     } finally {
