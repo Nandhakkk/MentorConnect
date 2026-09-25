@@ -306,10 +306,87 @@ const completeSession = async (req, res) => {
   }
 };
 
+/**
+ * GET /api/sessions/:id/live
+ * Return live session details and access control
+ */
+const getLiveSession = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { role } = req.user;
+
+    const session = await prisma.session.findUnique({
+      where: { id },
+      include: {
+        mentorship: {
+          include: {
+            mentor: { include: { user: { select: { name: true, email: true } } } },
+            student: { include: { user: { select: { name: true, email: true } } } }
+          }
+        },
+        payment: true
+      }
+    });
+
+    if (!session) {
+      return res.status(404).json({ status: 'error', message: 'Session not found.' });
+    }
+
+    // Check authorization
+    const isAuthorized = 
+      (role === 'STUDENT' && session.mentorship.studentId === req.user.studentProfile?.id) ||
+      (role === 'MENTOR' && session.mentorship.mentorId === req.user.mentorProfile?.id);
+
+    if (!isAuthorized) {
+      return res.status(403).json({ status: 'error', message: 'Access denied.' });
+    }
+
+    if (session.status === 'CANCELLED') {
+      return res.status(403).json({ joinAllowed: false, reason: 'SESSION_CANCELLED' });
+    }
+    
+    if (session.payment?.status !== 'PAID') {
+      return res.status(403).json({ joinAllowed: false, reason: 'PAYMENT_REQUIRED' });
+    }
+
+    // Check time window
+    const now = new Date();
+    const sessionStart = new Date(session.scheduledAt);
+    const sessionEnd = new Date(sessionStart.getTime() + session.duration * 60000);
+    
+    // Allow joining 10 minutes before start
+    const allowedJoinStart = new Date(sessionStart.getTime() - 10 * 60000);
+
+    if (now < allowedJoinStart) {
+      return res.status(200).json({ joinAllowed: false, reason: 'TOO_EARLY', joinAvailableAt: allowedJoinStart });
+    }
+
+    if (now > sessionEnd) {
+      return res.status(200).json({ joinAllowed: false, reason: 'SESSION_ENDED' });
+    }
+
+    return res.status(200).json({ 
+      joinAllowed: true, 
+      meetingLink: session.meetingLink,
+      sessionDetails: {
+        id: session.id,
+        topic: session.topic,
+        scheduledAt: session.scheduledAt,
+        duration: session.duration,
+        mentor: session.mentorship.mentor.user,
+        student: session.mentorship.student.user
+      }
+    });
+  } catch (err) {
+    return res.status(500).json({ status: 'error', message: 'Failed to fetch live session details.', details: err.message });
+  }
+};
+
 module.exports = {
   getSessions,
   createSession,
   getSessionById,
   cancelSession,
-  completeSession
+  completeSession,
+  getLiveSession
 };

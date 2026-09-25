@@ -14,6 +14,7 @@ const requireApprovedMentorWhenMentor = (req, res, next) => {
 router.get('/', requireApprovedMentorWhenMentor, sessionController.getSessions);
 router.post('/', sessionController.createSession);
 router.get('/:id', requireApprovedMentorWhenMentor, sessionController.getSessionById);
+router.get('/:id/live', requireApprovedMentorWhenMentor, sessionController.getLiveSession);
 router.put('/:id/cancel', requireApprovedMentorWhenMentor, sessionController.cancelSession);
 router.put('/:id/complete', authMiddleware.requireApprovedMentor, sessionController.completeSession);
 

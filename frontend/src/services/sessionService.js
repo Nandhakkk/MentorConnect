@@ -52,3 +52,13 @@ export async function completeSession(id) {
   if (!response.ok) throw new Error(data.message || 'Failed to complete session');
   return data.session;
 }
+
+export async function fetchLiveSession(id) {
+  const response = await fetch(`${API_BASE_URL}/sessions/${id}/live`, {
+    method: 'GET',
+    headers: getAuthHeaders()
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to fetch live session');
+  return data;
+}

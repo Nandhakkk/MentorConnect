@@ -115,6 +115,9 @@ const verifyPayment = async (req, res) => {
        return res.status(200).json({ status: 'success', message: 'Already paid' });
     }
 
+    // Generate unique Jitsi room name if not exists
+    const meetingLink = session.meetingLink || `mentorconnect-session-${crypto.randomBytes(8).toString('hex')}`;
+
     // Mark as PAID
     await prisma.$transaction([
       prisma.payment.update({
@@ -129,7 +132,10 @@ const verifyPayment = async (req, res) => {
       // Assuming SCHEDULED is the confirmed state
       prisma.session.update({
         where: { id: session.id },
-        data: { status: 'SCHEDULED' }
+        data: { 
+          status: 'SCHEDULED',
+          meetingLink: meetingLink
+        }
       })
     ]);
 

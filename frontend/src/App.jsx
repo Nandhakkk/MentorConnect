@@ -22,6 +22,7 @@ import PublicMentorProfile from './pages/student/PublicMentorProfile';
 import StudentMentors from './pages/student/StudentMentors';
 import BookSession from './pages/student/BookSession';
 import StudentSessions from './pages/student/StudentSessions';
+import LiveSession from './pages/student/LiveSession';
 import StudentMessages from './pages/student/StudentMessages';
 import StudentAIAssistant from './pages/student/StudentAIAssistant';
 import AIMentorRecommendations from './pages/student/AIMentorRecommendations';
@@ -91,6 +92,7 @@ export default function App() {
             <Route path="mentorships" element={<StudentMentors />} />
             <Route path="mentorships/:id/book" element={<BookSession />} />
             <Route path="sessions" element={<StudentSessions />} />
+            <Route path="sessions/:id/live" element={<LiveSession />} />
             <Route path="messages" element={<StudentMessages />} />
             <Route path="ai" element={<StudentAIAssistant />} />
             <Route path="ai-mentors" element={<AIMentorRecommendations />} />
