@@ -23,6 +23,7 @@ import StudentMentors from './pages/student/StudentMentors';
 import StudentSessions from './pages/student/StudentSessions';
 import StudentMessages from './pages/student/StudentMessages';
 import StudentAIAssistant from './pages/student/StudentAIAssistant';
+import AIMentorRecommendations from './pages/student/AIMentorRecommendations';
 import StudentProfileForm from './pages/student/StudentProfileForm';
 import StudentOnboarding from './pages/student/StudentOnboarding';
 import MentorDashboard from './pages/mentor/MentorDashboard';
@@ -90,6 +91,7 @@ export default function App() {
             <Route path="sessions" element={<StudentSessions />} />
             <Route path="messages" element={<StudentMessages />} />
             <Route path="ai" element={<StudentAIAssistant />} />
+            <Route path="ai-mentors" element={<AIMentorRecommendations />} />
             <Route path="profile" element={<StudentProfileForm />} />
             <Route path="onboarding" element={<StudentOnboarding />} />
             <Route index element={<Navigate to="dashboard" replace />} />

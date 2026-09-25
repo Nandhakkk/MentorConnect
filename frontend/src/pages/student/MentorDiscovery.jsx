@@ -45,6 +45,21 @@ export default function MentorDiscovery() {
         </div>
       </div>
 
+      {/* AI Recommendations Banner */}
+      <div className="glass-card" style={{ padding: '1.5rem', marginBottom: '2rem', background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(99, 102, 241, 0.1) 100%)', border: '1px solid rgba(168, 85, 247, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+        <div>
+          <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            ✨ Let AI Find Your Perfect Match
+          </h3>
+          <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
+            Don't want to search? Our AI can analyze your goals, budget, and experience to recommend the best mentors for you.
+          </p>
+        </div>
+        <Link to="/student/ai-mentors" className="btn btn-primary" style={{ padding: '0.75rem 1.5rem', background: 'linear-gradient(135deg, #a855f7 0%, #6366f1 100%)', border: 'none' }}>
+          Get AI Recommendations
+        </Link>
+      </div>
+
       <div className="glass-card" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
         <form onSubmit={handleSearch} style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
           <input

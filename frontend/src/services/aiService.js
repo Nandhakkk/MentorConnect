@@ -31,3 +31,21 @@ export async function askAI(question, goalId = null) {
   }
   return data.answer;
 }
+
+/**
+ * Get AI mentor recommendations.
+ */
+export async function getMentorRecommendations() {
+  const response = await fetch(`${API_BASE_URL}/ai/mentor-recommendations`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+  });
+
+  const data = await response.json();
+  if (!response.ok || !data.success) {
+    const error = new Error(data.error || data.message || 'Failed to get recommendations');
+    error.status = response.status;
+    throw error;
+  }
+  return data;
+}

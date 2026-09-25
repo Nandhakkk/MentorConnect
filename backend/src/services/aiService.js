@@ -184,6 +184,55 @@ You must output valid JSON matching this exact structure:
 Application Data:
 ${dataString}`;
   }
+
+  /**
+   * Build the AI prompt for mentor recommendations.
+   * @param {object} studentData - The student's goals, skills, preferences, etc.
+   * @param {Array} candidateMentors - Array of eligible mentor objects.
+   * @returns {string} - Assembled prompt
+   */
+  buildMentorRecommendationPrompt(studentData, candidateMentors) {
+    const studentInfo = JSON.stringify(studentData, null, 2);
+    const mentorsInfo = JSON.stringify(candidateMentors.map(m => ({
+      id: m.id,
+      name: m.user.name,
+      expertise: m.expertise,
+      experienceYears: m.experience,
+      teachingExperienceYears: m.teachingExperience,
+      sessionFee: m.sessionFee,
+      language: m.language,
+      topics: m.topics.map(t => t.topic.name)
+    })), null, 2);
+
+    return `You are a mentor recommendation assistant for MentorConnect.
+Your task is to analyze the learner's profile and goals, compare them against a provided list of candidate mentors, and recommend the most suitable mentors.
+
+Rules:
+- Recommend only from the supplied candidate mentors list.
+- Never invent a mentor, their qualifications, availability, or change fees.
+- Do not make approval decisions, safety/legal judgments, or discriminate.
+- Explain recommendations concisely using only the supplied information.
+- The learner makes the final choice.
+- Output valid JSON containing a "recommendations" array. Limit to the top 3 best matching mentors.
+- Use this JSON structure exactly:
+{
+  "recommendations": [
+    {
+      "mentorId": "exact string ID from candidate list",
+      "compatibility": "HIGH | MEDIUM | LOW",
+      "reasons": ["short reason 1", "short reason 2"],
+      "considerations": ["short consideration 1"]
+    }
+  ]
+}
+If no mentors are suitable at all, return an empty array for recommendations.
+
+Learner Profile & Context:
+${studentInfo}
+
+Candidate Mentors:
+${mentorsInfo}`;
+  }
 }
 
 module.exports = new AIService();
