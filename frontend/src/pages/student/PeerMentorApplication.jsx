@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getEligibility, createApplication, getMyApplication, updateApplication } from '../../services/peerMentorService';
+import { getEligibility, createApplication, getMyApplication, updateApplication, screenApplication } from '../../services/peerMentorService';
 
 export default function PeerMentorApplication() {
   const [eligibility, setEligibility] = useState(null);
@@ -14,6 +14,9 @@ export default function PeerMentorApplication() {
   
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState('');
+  
+  const [aiScreening, setAiScreening] = useState(null);
+  const [screeningLoading, setScreeningLoading] = useState(false);
 
   const fetchStatus = async () => {
     try {
@@ -21,14 +24,19 @@ export default function PeerMentorApplication() {
       const data = await getEligibility();
       setEligibility(data);
       
-      if (data.applicationStatus === 'PENDING') {
+      if (data.applicationStatus === 'PENDING' || data.applicationStatus === 'AI_SCREENED') {
         const app = await getMyApplication();
-        if (app && app.eligibilityInfo) {
-          try {
-            const parsed = JSON.parse(app.eligibilityInfo);
-            setFormData(parsed);
-          } catch(e) {
-            console.error('Failed to parse app data', e);
+        if (app) {
+          if (app.eligibilityInfo) {
+            try {
+              const parsed = JSON.parse(app.eligibilityInfo);
+              setFormData(parsed);
+            } catch(e) {
+              console.error('Failed to parse app data', e);
+            }
+          }
+          if (app.aiScreening) {
+            setAiScreening(app.aiScreening);
           }
         }
       }
@@ -69,6 +77,23 @@ export default function PeerMentorApplication() {
       setError(err.message || 'Failed to submit application');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleScreening = async () => {
+    try {
+      setScreeningLoading(true);
+      setError('');
+      await screenApplication();
+      setSuccess('AI Screening completed successfully.');
+      setTimeout(() => {
+        setSuccess('');
+        fetchStatus();
+      }, 2000);
+    } catch (err) {
+      setError(err.message || 'Failed to run AI screening');
+    } finally {
+      setScreeningLoading(false);
     }
   };
 
@@ -190,6 +215,82 @@ export default function PeerMentorApplication() {
                   {submitting ? 'Submitting...' : eligibility?.applicationStatus === 'PENDING' ? 'Update Application' : 'Submit Application'}
                 </button>
               </form>
+
+              {/* AI Screening Section */}
+              {eligibility?.applicationStatus === 'PENDING' && (
+                <div style={{ marginTop: '3rem', paddingTop: '2rem', borderTop: '1px solid var(--border-subtle)' }}>
+                  <h3 style={{ marginTop: 0, marginBottom: '1rem', color: 'white' }}>AI Preliminary Screening</h3>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+                    Before an administrator reviews your application, you must run our AI preliminary screening. 
+                    This will analyze your application and provide a summary for the administrator.
+                    <br/><br/>
+                    <strong>Note:</strong> AI screening is preliminary and does not guarantee approval. Final approval is handled by an administrator.
+                  </p>
+                  
+                  <button 
+                    onClick={handleScreening}
+                    disabled={screeningLoading || submitting}
+                    className="btn"
+                    style={{ background: '#8b5cf6', color: 'white' }}
+                  >
+                    {screeningLoading ? 'Running AI Screening...' : 'Run AI Screening'}
+                  </button>
+                </div>
+              )}
+
+              {eligibility?.applicationStatus === 'AI_SCREENED' && aiScreening && (
+                <div style={{ marginTop: '3rem', paddingTop: '2rem', borderTop: '1px solid var(--border-subtle)' }}>
+                  <h3 style={{ marginTop: 0, marginBottom: '1rem', color: 'white' }}>AI Preliminary Screening Completed</h3>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+                    AI screening is preliminary and does not guarantee approval. Final approval is handled by an administrator.
+                  </p>
+
+                  <div style={{ background: 'rgba(255,255,255,0.05)', padding: '1.5rem', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div>
+                      <strong style={{ color: 'var(--text-primary)' }}>Recommendation:</strong>
+                      <div style={{ color: 'var(--text-secondary)', marginTop: '0.25rem' }}>{aiScreening.recommendation}</div>
+                    </div>
+                    
+                    {aiScreening.structuredFindings?.strengths?.length > 0 && (
+                      <div>
+                        <strong style={{ color: '#10b981' }}>Strengths:</strong>
+                        <ul style={{ margin: '0.5rem 0 0 1.2rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                          {aiScreening.structuredFindings.strengths.map((s, i) => <li key={i}>{s}</li>)}
+                        </ul>
+                      </div>
+                    )}
+                    
+                    {aiScreening.structuredFindings?.concerns?.length > 0 && (
+                      <div>
+                        <strong style={{ color: '#f59e0b' }}>Concerns:</strong>
+                        <ul style={{ margin: '0.5rem 0 0 1.2rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                          {aiScreening.structuredFindings.concerns.map((c, i) => <li key={i}>{c}</li>)}
+                        </ul>
+                      </div>
+                    )}
+
+                    {aiScreening.structuredFindings?.developmentAreas?.length > 0 && (
+                      <div>
+                        <strong style={{ color: '#3b82f6' }}>Development Areas:</strong>
+                        <ul style={{ margin: '0.5rem 0 0 1.2rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                          {aiScreening.structuredFindings.developmentAreas.map((d, i) => <li key={i}>{d}</li>)}
+                        </ul>
+                      </div>
+                    )}
+                    
+                    {aiScreening.riskFlags && Object.keys(aiScreening.riskFlags).length > 0 && (
+                      <div>
+                        <strong style={{ color: '#ef4444' }}>Risk Flags:</strong>
+                        <ul style={{ margin: '0.5rem 0 0 1.2rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                          {Array.isArray(aiScreening.riskFlags) 
+                            ? aiScreening.riskFlags.map((r, i) => <li key={i}>{r}</li>)
+                            : <li>Flagged items present (Internal review required)</li>}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>

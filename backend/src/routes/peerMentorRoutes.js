@@ -10,5 +10,6 @@ router.get('/apply/eligibility', peerMentorController.getEligibility);
 router.post('/apply', peerMentorController.createApplication);
 router.get('/application', peerMentorController.getMyApplication);
 router.put('/apply', peerMentorController.updateApplication);
+router.post('/apply/screen', peerMentorController.screenApplication);
 
 module.exports = router;

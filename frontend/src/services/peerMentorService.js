@@ -49,3 +49,13 @@ export async function updateApplication(dataPayload) {
   if (!response.ok) throw new Error(data.message || 'Failed to update application');
   return data.data;
 }
+
+export async function screenApplication() {
+  const response = await fetch(`${API_BASE_URL}/peer-mentor/apply/screen`, {
+    method: 'POST',
+    headers: getAuthHeaders()
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to screen application');
+  return data.data;
+}

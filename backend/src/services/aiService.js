@@ -233,6 +233,41 @@ ${studentInfo}
 Candidate Mentors:
 ${mentorsInfo}`;
   }
+
+  /**
+   * Build the AI prompt for screening a peer mentor application.
+   * @param {object} studentData - Data from the user's student profile and the application.
+   * @returns {string} - Assembled prompt
+   */
+  buildPeerScreeningPrompt(studentData) {
+    const dataString = JSON.stringify(studentData, null, 2);
+
+    return `You are an AI Preliminary Screener for a peer mentor application.
+Your job is to objectively analyze the provided student and application data and produce a structured JSON report for the human administrator.
+You are NOT the final decision maker. Do not approve, reject, or suspend anyone. Use wording such as "Preliminary assessment for administrator review."
+Evaluate the student's readiness to mentor others based ONLY on the provided data.
+
+Assess:
+1. Relevant knowledge/skills
+2. Experience level
+3. Ability to explain or support another learner
+4. Motivation to become a peer mentor
+5. Communication-related evidence
+6. Potential concerns/risk flags
+7. Areas that may need improvement before mentoring
+
+You must output valid JSON matching this exact structure:
+{
+  "recommendation": "A concise summary/recommendation for the administrator.",
+  "strengths": ["strength 1", "strength 2"],
+  "concerns": ["concern 1", "concern 2"],
+  "riskFlags": ["flag 1"],
+  "developmentAreas": ["area 1", "area 2"]
+}
+
+Application Data:
+${dataString}`;
+  }
 }
 
 module.exports = new AIService();
