@@ -17,6 +17,7 @@ const aiRoutes = require('./aiRoutes');
 const guardianRoutes = require('./guardianRoutes');
 const paymentRoutes = require('./paymentRoutes');
 const notificationRoutes = require('./notificationRoutes');
+const assignmentRoutes = require('./assignmentRoutes');
 // Mount sub-routers
 router.use('/health', healthRoutes);
 router.use('/admin', adminRoutes);
@@ -34,5 +35,6 @@ router.use('/ai', aiRoutes);
 router.use('/guardian', guardianRoutes);
 router.use('/payments', paymentRoutes);
 router.use('/notifications', notificationRoutes);
+router.use('/assignments', assignmentRoutes);
 
 module.exports = router;

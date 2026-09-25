@@ -23,6 +23,8 @@ import StudentMentors from './pages/student/StudentMentors';
 import BookSession from './pages/student/BookSession';
 import StudentSessions from './pages/student/StudentSessions';
 import LiveSession from './pages/student/LiveSession';
+import StudentAssignments from './pages/student/StudentAssignments';
+import AssignmentDetails from './pages/student/AssignmentDetails';
 import StudentMessages from './pages/student/StudentMessages';
 import StudentAIAssistant from './pages/student/StudentAIAssistant';
 import AIMentorRecommendations from './pages/student/AIMentorRecommendations';
@@ -33,6 +35,9 @@ import MentorProfileForm from './pages/mentor/MentorProfileForm';
 import MentorStudentsList from './pages/mentor/MentorStudentsList';
 import MentorApplication from './pages/mentor/MentorApplication';
 import MentorSessions from './pages/mentor/MentorSessions';
+import MentorAssignments from './pages/mentor/MentorAssignments';
+import CreateAssignment from './pages/mentor/CreateAssignment';
+import ReviewAssignment from './pages/mentor/ReviewAssignment';
 import MentorAvailability from './pages/mentor/MentorAvailability';
 import MentorMessages from './pages/mentor/MentorMessages';
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -93,6 +98,8 @@ export default function App() {
             <Route path="mentorships/:id/book" element={<BookSession />} />
             <Route path="sessions" element={<StudentSessions />} />
             <Route path="sessions/:id/live" element={<LiveSession />} />
+            <Route path="assignments" element={<StudentAssignments />} />
+            <Route path="assignments/:id" element={<AssignmentDetails />} />
             <Route path="messages" element={<StudentMessages />} />
             <Route path="ai" element={<StudentAIAssistant />} />
             <Route path="ai-mentors" element={<AIMentorRecommendations />} />
@@ -114,6 +121,9 @@ export default function App() {
             <Route path="students" element={<MentorStudentsList />} />
             <Route path="sessions" element={<MentorSessions />} />
             <Route path="sessions/:id/live" element={<LiveSession />} />
+            <Route path="assignments" element={<MentorAssignments />} />
+            <Route path="assignments/create" element={<CreateAssignment />} />
+            <Route path="assignments/:id/review" element={<ReviewAssignment />} />
             <Route path="messages" element={<MentorMessages />} />
             <Route path="availability" element={<MentorAvailability />} />
             <Route path="profile" element={<MentorProfileForm />} />

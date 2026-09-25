@@ -1,13 +1,13 @@
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-const icons = { Dashboard: '▦', Goals: '◎', 'Find Mentor': '⌕', 'My Mentors': '↔', Sessions: '◷', Messages: '□', 'AI Assistant': '✦', Profile: '◉', Students: '♙', Availability: '◴', Users: '♧', Mentors: '♢', Mentorships: '⛓' };
+const icons = { Dashboard: '▦', Goals: '◎', 'Find Mentor': '⌕', 'My Mentors': '↔', Sessions: '◷', Messages: '□', Assignments: '▤', 'AI Assistant': '✦', Profile: '◉', Students: '♙', Availability: '◴', Users: '♧', Mentors: '♢', Mentorships: '⛓' };
 
 export default function Sidebar() {
   const { user } = useAuth();
   const linksByRole = {
-    STUDENT: [['Dashboard', '/student/dashboard'], ['Goals', '/student/goals'], ['Find Mentor', '/student/mentor'], ['My Mentors', '/student/mentorships'], ['Sessions', '/student/sessions'], ['Messages', '/student/messages'], ['AI Assistant', '/student/ai'], ['Profile', '/student/profile']],
-    MENTOR: [['Dashboard', '/mentor/dashboard'], ['Students', '/mentor/students'], ['Sessions', '/mentor/sessions'], ['Availability', '/mentor/availability'], ['Messages', '/mentor/messages'], ['Profile', '/mentor/profile']],
+    STUDENT: [['Dashboard', '/student/dashboard'], ['Goals', '/student/goals'], ['Find Mentor', '/student/mentor'], ['My Mentors', '/student/mentorships'], ['Sessions', '/student/sessions'], ['Assignments', '/student/assignments'], ['Messages', '/student/messages'], ['AI Assistant', '/student/ai'], ['Profile', '/student/profile']],
+    MENTOR: [['Dashboard', '/mentor/dashboard'], ['Students', '/mentor/students'], ['Sessions', '/mentor/sessions'], ['Assignments', '/mentor/assignments'], ['Availability', '/mentor/availability'], ['Messages', '/mentor/messages'], ['Profile', '/mentor/profile']],
     ADMIN: [['Dashboard', '/admin/dashboard'], ['Users', '/admin/users'], ['Mentors', '/admin/mentors'], ['Mentorships', '/admin/mentorships']]
   };
   const navLinks = linksByRole[user?.role] || [];
