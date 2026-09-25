@@ -28,6 +28,7 @@ import StudentOnboarding from './pages/student/StudentOnboarding';
 import MentorDashboard from './pages/mentor/MentorDashboard';
 import MentorProfileForm from './pages/mentor/MentorProfileForm';
 import MentorStudentsList from './pages/mentor/MentorStudentsList';
+import MentorApplication from './pages/mentor/MentorApplication';
 import MentorSessions from './pages/mentor/MentorSessions';
 import MentorAvailability from './pages/mentor/MentorAvailability';
 import MentorMessages from './pages/mentor/MentorMessages';
@@ -107,6 +108,7 @@ export default function App() {
             <Route path="messages" element={<MentorMessages />} />
             <Route path="availability" element={<MentorAvailability />} />
             <Route path="profile" element={<MentorProfileForm />} />
+            <Route path="application" element={<MentorApplication />} />
             <Route index element={<Navigate to="dashboard" replace />} />
           </Route>
 
