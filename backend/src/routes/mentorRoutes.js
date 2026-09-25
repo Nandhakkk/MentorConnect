@@ -10,7 +10,11 @@ router.use(authMiddleware.authenticateToken);
 router.get('/me', authMiddleware.requireApprovedMentor, mentorController.getMyProfile);
 router.put('/me', authMiddleware.requireApprovedMentor, mentorController.updateMyProfile);
 
-// Mentor discovery routes
+// Availability
+router.post('/me/availability', authMiddleware.requireApprovedMentor, mentorController.addAvailability);
+router.delete('/me/availability/:id', authMiddleware.requireApprovedMentor, mentorController.removeAvailability);
+
+// Mentor discovery routes (Available to all authenticated users like Students)
 router.get('/', mentorController.getAvailableMentors);
 router.get('/:id', mentorController.getMentorById);
 

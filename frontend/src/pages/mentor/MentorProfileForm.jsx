@@ -8,7 +8,11 @@ export default function MentorProfileForm() {
     bio: '',
     expertise: '',
     experience: '',
-    hourlyRate: '',
+    language: '',
+    linkedinUrl: '',
+    teachingExperience: '',
+    sessionFee: '',
+    topics: '',
     isAvailable: true
   });
   const [loading, setLoading] = useState(true);
@@ -22,11 +26,15 @@ export default function MentorProfileForm() {
         setLoading(true);
         const data = await fetchMyMentorProfile();
         setProfile({
-          bio: data.bio || '',
-          expertise: data.expertise || '',
-          experience: data.experience || '',
-          hourlyRate: data.hourlyRate || '',
-          isAvailable: data.isAvailable
+          bio: data.profile.bio || '',
+          expertise: data.profile.expertise || '',
+          experience: data.profile.experience || '',
+          language: data.profile.language || '',
+          linkedinUrl: data.profile.linkedinUrl || '',
+          teachingExperience: data.profile.teachingExperience || '',
+          sessionFee: data.profile.sessionFee || '',
+          topics: data.profile.topics ? data.profile.topics.map(t => t.topic.name).join(', ') : '',
+          isAvailable: data.profile.isAvailable
         });
       } catch (err) {
         setError(err.message);
@@ -43,7 +51,11 @@ export default function MentorProfileForm() {
       setSaving(true);
       setMessage('');
       setError('');
-      await updateMyMentorProfile(profile);
+      const payload = {
+        ...profile,
+        topics: profile.topics ? profile.topics.split(',').map(t => t.trim()).filter(Boolean) : []
+      };
+      await updateMyMentorProfile(payload);
       setMessage('Profile updated successfully.');
     } catch (err) {
       setError(err.message);
@@ -108,16 +120,60 @@ export default function MentorProfileForm() {
               />
             </div>
             <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Hourly Rate ($)</label>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Session Fee ($/hr)</label>
               <input 
                 type="number" 
                 min="0"
                 step="0.01"
-                value={profile.hourlyRate} 
-                onChange={e => setProfile({...profile, hourlyRate: e.target.value})}
+                value={profile.sessionFee} 
+                onChange={e => setProfile({...profile, sessionFee: e.target.value})}
                 style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
               />
             </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Language</label>
+              <input 
+                type="text" 
+                placeholder="e.g. English, Spanish"
+                value={profile.language} 
+                onChange={e => setProfile({...profile, language: e.target.value})}
+                style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
+              />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Teaching Exp (Years)</label>
+              <input 
+                type="number" 
+                min="0"
+                value={profile.teachingExperience} 
+                onChange={e => setProfile({...profile, teachingExperience: e.target.value})}
+                style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
+              />
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Topics (Comma separated)</label>
+            <input 
+              type="text" 
+              placeholder="e.g. React, Career Growth, Interview Prep"
+              value={profile.topics} 
+              onChange={e => setProfile({...profile, topics: e.target.value})}
+              style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
+            />
+          </div>
+
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>LinkedIn URL</label>
+            <input 
+              type="url" 
+              value={profile.linkedinUrl} 
+              onChange={e => setProfile({...profile, linkedinUrl: e.target.value})}
+              style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
+            />
           </div>
 
           <div style={{ marginBottom: '1.5rem' }}>

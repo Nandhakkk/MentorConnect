@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { fetchAvailability, createAvailability, deleteAvailability } from '../../services/availabilityService';
+import { fetchMyMentorProfile, addMentorAvailability, removeMentorAvailability } from '../../services/mentorService';
 
 const DAYS_OF_WEEK = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
 
@@ -17,8 +17,8 @@ export default function MentorAvailability() {
   const loadAvailability = async () => {
     try {
       setLoading(true);
-      const data = await fetchAvailability();
-      setAvailabilities(data);
+      const data = await fetchMyMentorProfile();
+      setAvailabilities(data.profile.availabilities || []);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -33,7 +33,7 @@ export default function MentorAvailability() {
   const handleAddSlot = async (e) => {
     e.preventDefault();
     try {
-      await createAvailability(newSlot);
+      await addMentorAvailability(newSlot);
       setNewSlot({ dayOfWeek: 'MONDAY', startTime: '09:00', endTime: '17:00' });
       await loadAvailability();
     } catch (err) {
@@ -44,7 +44,7 @@ export default function MentorAvailability() {
   const handleDeleteSlot = async (id) => {
     if (!window.confirm('Delete this availability slot?')) return;
     try {
-      await deleteAvailability(id);
+      await removeMentorAvailability(id);
       await loadAvailability();
     } catch (err) {
       alert(err.message);

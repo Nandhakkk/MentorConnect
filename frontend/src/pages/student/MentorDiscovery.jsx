@@ -6,12 +6,12 @@ export default function MentorDiscovery() {
   const [mentors, setMentors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [search, setSearch] = useState('');
+  const [searchParams, setSearchParams] = useState({ search: '', minFee: '', maxFee: '' });
 
-  const loadMentors = async (query = '') => {
+  const loadMentors = async (params = searchParams) => {
     try {
       setLoading(true);
-      const data = await fetchAvailableMentors(query);
+      const data = await fetchAvailableMentors(params);
       setMentors(data);
       setError('');
     } catch (err) {
@@ -27,7 +27,13 @@ export default function MentorDiscovery() {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    loadMentors(search);
+    loadMentors(searchParams);
+  };
+
+  const handleClear = () => {
+    const cleared = { search: '', minFee: '', maxFee: '' };
+    setSearchParams(cleared);
+    loadMentors(cleared);
   };
 
   return (
@@ -35,25 +41,39 @@ export default function MentorDiscovery() {
       <div className="page-header">
         <div>
           <h2 className="page-title">Find a Mentor</h2>
-          <p className="page-subtitle">Search for mentors by name or expertise to guide your journey.</p>
+          <p className="page-subtitle">Discover approved professional mentors to guide your journey.</p>
         </div>
       </div>
 
       <div className="glass-card" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
-        <form onSubmit={handleSearch} style={{ display: 'flex', gap: '1rem' }}>
+        <form onSubmit={handleSearch} style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
           <input
             type="text"
             placeholder="Search mentors by name or expertise..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            style={{ flex: 1, padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
+            value={searchParams.search}
+            onChange={(e) => setSearchParams({ ...searchParams, search: e.target.value })}
+            style={{ flex: '1 1 300px', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
+          />
+          <input
+            type="number"
+            placeholder="Min Fee ($)"
+            value={searchParams.minFee}
+            onChange={(e) => setSearchParams({ ...searchParams, minFee: e.target.value })}
+            style={{ width: '120px', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
+          />
+          <input
+            type="number"
+            placeholder="Max Fee ($)"
+            value={searchParams.maxFee}
+            onChange={(e) => setSearchParams({ ...searchParams, maxFee: e.target.value })}
+            style={{ width: '120px', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
           />
           <button type="submit" className="btn btn-primary" style={{ padding: '0.75rem 1.5rem' }}>Search</button>
-          {search && (
+          {(searchParams.search || searchParams.minFee || searchParams.maxFee) && (
             <button 
               type="button" 
-              onClick={() => { setSearch(''); loadMentors(''); }} 
-              style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}
+              onClick={handleClear} 
+              style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '0.75rem' }}
             >
               Clear
             </button>
@@ -83,16 +103,25 @@ export default function MentorDiscovery() {
                     Available
                   </span>
                 </div>
-                
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+                  {mentor.topics?.map(t => (
+                    <span key={t.topicId} style={{ background: 'rgba(255,255,255,0.1)', padding: '0.2rem 0.6rem', borderRadius: '12px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                      {t.topic?.name}
+                    </span>
+                  ))}
+                </div>
+
                 {mentor.bio && (
                   <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '1rem', flex: 1, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                     {mentor.bio}
                   </p>
                 )}
 
-                <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
-                  {mentor.experience && <span>Experience: {mentor.experience} yrs</span>}
-                  {mentor.hourlyRate && <span>Rate: ${mentor.hourlyRate}/hr</span>}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
+                  {mentor.experience && <div><strong>Industry:</strong> {mentor.experience} yrs</div>}
+                  {mentor.teachingExperience && <div><strong>Teaching:</strong> {mentor.teachingExperience} yrs</div>}
+                  {mentor.language && <div><strong>Lang:</strong> {mentor.language}</div>}
+                  {mentor.sessionFee != null && <div style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>Fee: ${mentor.sessionFee}/hr</div>}
                 </div>
 
                 <div style={{ display: 'flex', gap: '0.75rem', marginTop: 'auto' }}>

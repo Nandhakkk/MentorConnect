@@ -19,7 +19,7 @@ export async function fetchMyMentorProfile() {
   });
   const data = await response.json();
   if (!response.ok) throw new Error(data.message || 'Failed to fetch profile');
-  return data.profile;
+  return { profile: data.profile, isReady: data.isReady };
 }
 
 export async function updateMyMentorProfile(profileData) {
@@ -33,8 +33,14 @@ export async function updateMyMentorProfile(profileData) {
   return data.profile;
 }
 
-export async function fetchAvailableMentors(searchQuery = '') {
-  const url = searchQuery ? `${API_BASE_URL}/mentors?search=${encodeURIComponent(searchQuery)}` : `${API_BASE_URL}/mentors`;
+export async function fetchAvailableMentors(searchParams = {}) {
+  const query = new URLSearchParams();
+  if (searchParams.search) query.append('search', searchParams.search);
+  if (searchParams.expertise) query.append('expertise', searchParams.expertise);
+  if (searchParams.minFee) query.append('minFee', searchParams.minFee);
+  if (searchParams.maxFee) query.append('maxFee', searchParams.maxFee);
+  
+  const url = `${API_BASE_URL}/mentors?${query.toString()}`;
   const response = await fetch(url, {
     method: 'GET',
     headers: getAuthHeaders()
@@ -42,6 +48,27 @@ export async function fetchAvailableMentors(searchQuery = '') {
   const data = await response.json();
   if (!response.ok) throw new Error(data.message || 'Failed to fetch mentors');
   return data.mentors;
+}
+
+export async function addMentorAvailability(availabilityData) {
+  const response = await fetch(`${API_BASE_URL}/mentors/me/availability`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(availabilityData)
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to add availability');
+  return data.availability;
+}
+
+export async function removeMentorAvailability(id) {
+  const response = await fetch(`${API_BASE_URL}/mentors/me/availability/${id}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders()
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to remove availability');
+  return data;
 }
 
 export async function fetchMentorById(id) {
