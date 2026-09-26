@@ -39,6 +39,7 @@ export async function fetchAvailableMentors(searchParams = {}) {
   if (searchParams.expertise) query.append('expertise', searchParams.expertise);
   if (searchParams.minFee) query.append('minFee', searchParams.minFee);
   if (searchParams.maxFee) query.append('maxFee', searchParams.maxFee);
+  if (searchParams.mentorType) query.append('mentorType', searchParams.mentorType);
   
   const url = `${API_BASE_URL}/mentors?${query.toString()}`;
   const response = await fetch(url, {

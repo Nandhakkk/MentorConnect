@@ -196,6 +196,7 @@ ${dataString}`;
     const mentorsInfo = JSON.stringify(candidateMentors.map(m => ({
       id: m.id,
       name: m.user.name,
+      mentorType: m.mentorType,
       expertise: m.expertise,
       experienceYears: m.experience,
       teachingExperienceYears: m.teachingExperience,

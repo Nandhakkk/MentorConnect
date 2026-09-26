@@ -72,6 +72,16 @@ export default function PublicMentorProfile() {
         </div>
         
         <h2 style={{ margin: '0 0 0.5rem 0', fontSize: '1.8rem', color: 'var(--text-primary)' }}>{mentor.user?.name}</h2>
+        <div style={{ marginBottom: '0.5rem' }}>
+          <span style={{ 
+            fontSize: '0.8rem', padding: '0.25rem 0.75rem', borderRadius: '16px', fontWeight: 600,
+            background: mentor.mentorType === 'PEER' ? 'rgba(99, 102, 241, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+            color: mentor.mentorType === 'PEER' ? '#818cf8' : '#10b981',
+            border: mentor.mentorType === 'PEER' ? '1px solid rgba(99, 102, 241, 0.3)' : '1px solid rgba(16, 185, 129, 0.3)'
+          }}>
+            {mentor.mentorType === 'PEER' ? 'Peer Mentor' : 'Professional Mentor'}
+          </span>
+        </div>
         <div style={{ color: 'var(--accent-primary)', fontSize: '1rem', fontWeight: 600, marginBottom: '0.5rem' }}>{mentor.expertise || 'General Mentor'}</div>
         
         <div style={{ marginBottom: '1.5rem', fontSize: '1.1rem', color: '#eab308' }}>

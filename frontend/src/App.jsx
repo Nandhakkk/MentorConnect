@@ -34,6 +34,8 @@ import AIMentorRecommendations from './pages/student/AIMentorRecommendations';
 import StudentProfileForm from './pages/student/StudentProfileForm';
 import StudentOnboarding from './pages/student/StudentOnboarding';
 import PeerMentorApplication from './pages/student/PeerMentorApplication';
+import PeerMentorStudents from './pages/student/PeerMentorStudents';
+import PeerMentorProfileForm from './pages/student/PeerMentorProfileForm';
 import MentorDashboard from './pages/mentor/MentorDashboard';
 import MentorProfileForm from './pages/mentor/MentorProfileForm';
 import MentorStudentsList from './pages/mentor/MentorStudentsList';
@@ -118,6 +120,14 @@ export default function App() {
             <Route path="profile" element={<StudentProfileForm />} />
             <Route path="onboarding" element={<StudentOnboarding />} />
             <Route path="peer-mentor/apply" element={<PeerMentorApplication />} />
+            {/* Peer Mentor Dashboard Routes (capability-based, still under /student) */}
+            <Route path="mentor-dashboard/students" element={<PeerMentorStudents />} />
+            <Route path="mentor-dashboard/sessions" element={<MentorSessions />} />
+            <Route path="mentor-dashboard/assignments" element={<MentorAssignments />} />
+            <Route path="mentor-dashboard/assignments/create" element={<CreateAssignment />} />
+            <Route path="mentor-dashboard/assignments/:id/review" element={<ReviewAssignment />} />
+            <Route path="mentor-dashboard/availability" element={<MentorAvailability />} />
+            <Route path="mentor-dashboard/profile" element={<PeerMentorProfileForm />} />
             <Route index element={<Navigate to="dashboard" replace />} />
           </Route>
 

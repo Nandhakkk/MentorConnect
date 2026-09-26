@@ -107,17 +107,20 @@ const recommendMentors = async (req, res) => {
       goals
     };
 
-    // 2. Fetch eligible mentors based on Phase 3D hard constraints
+    // 2. Fetch eligible mentors — both PROFESSIONAL and PEER
     const whereClause = {
-      user: { role: 'MENTOR' },
-      mentorType: 'PROFESSIONAL',
+      mentorType: { in: ['PROFESSIONAL', 'PEER'] },
       status: 'APPROVED',
       isAvailable: true,
       bio: { not: null },
       expertise: { not: null },
       sessionFee: { not: null },
       topics: { some: {} },
-      availabilities: { some: { isActive: true } }
+      availabilities: { some: { isActive: true } },
+      user: {
+        isActive: true,
+        isSuspended: false
+      }
     };
 
     if (studentProfile.budget) {

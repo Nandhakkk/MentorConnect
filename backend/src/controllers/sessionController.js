@@ -1,5 +1,6 @@
 const prisma = require('../config/db');
 const notificationService = require('../services/notificationService');
+const { isApprovedMentor, isMentorParticipant, isStudentParticipant } = require('../utils/mentorCapability');
 
 /**
  * Helper to get the day of the week from a date object
@@ -19,7 +20,8 @@ const parseTime = (timeStr) => {
 
 /**
  * GET /api/sessions
- * Returns sessions for the authenticated user based on role.
+ * Returns sessions for the authenticated user based on their profile.
+ * Peer mentors with role=STUDENT can see sessions from both learner and mentor perspectives.
  */
 const getSessions = async (req, res) => {
   try {
@@ -27,9 +29,34 @@ const getSessions = async (req, res) => {
     
     let whereClause = {};
     if (role === 'STUDENT') {
-      const profile = req.user.studentProfile;
-      if (!profile) return res.status(403).json({ status: 'error', message: 'Profile required.' });
-      whereClause = { mentorship: { studentId: profile.id } };
+      const studentProfile = req.user.studentProfile;
+      const mentorProfile = req.user.mentorProfile;
+      
+      if (!studentProfile && !mentorProfile) {
+        return res.status(403).json({ status: 'error', message: 'Profile required.' });
+      }
+
+      // For peer mentors (STUDENT role + approved mentorProfile), show sessions from both sides
+      if (mentorProfile && isApprovedMentor(req.user)) {
+        whereClause = {
+          OR: [
+            { mentorship: { studentId: studentProfile?.id } },
+            { mentorship: { mentorId: mentorProfile.id } }
+          ].filter(c => c.mentorship.studentId || c.mentorship.mentorId)
+        };
+        // Remove nulls
+        whereClause.OR = whereClause.OR.filter(c => {
+          const val = c.mentorship.studentId || c.mentorship.mentorId;
+          return val != null;
+        });
+        if (whereClause.OR.length === 0) {
+          return res.status(403).json({ status: 'error', message: 'Profile required.' });
+        }
+      } else if (studentProfile) {
+        whereClause = { mentorship: { studentId: studentProfile.id } };
+      } else {
+        return res.status(403).json({ status: 'error', message: 'Profile required.' });
+      }
     } else if (role === 'MENTOR') {
       const profile = req.user.mentorProfile;
       if (!profile) return res.status(403).json({ status: 'error', message: 'Profile required.' });
@@ -201,7 +228,6 @@ const createSession = async (req, res) => {
 const getSessionById = async (req, res) => {
   try {
     const { id } = req.params;
-    const { role } = req.user;
 
     const session = await prisma.session.findUnique({
       where: { id },
@@ -219,10 +245,10 @@ const getSessionById = async (req, res) => {
       return res.status(404).json({ status: 'error', message: 'Session not found.' });
     }
 
-    // Check authorization
+    // Check authorization via profile IDs (supports peer mentors)
     const isAuthorized = 
-      (role === 'STUDENT' && session.mentorship.studentId === req.user.studentProfile?.id) ||
-      (role === 'MENTOR' && session.mentorship.mentorId === req.user.mentorProfile?.id);
+      isStudentParticipant(req.user, session.mentorship.studentId) ||
+      isMentorParticipant(req.user, session.mentorship.mentorId);
 
     if (!isAuthorized) {
       return res.status(403).json({ status: 'error', message: 'Access denied.' });
@@ -241,11 +267,17 @@ const getSessionById = async (req, res) => {
 const cancelSession = async (req, res) => {
   try {
     const { id } = req.params;
-    const { role } = req.user;
 
     const session = await prisma.session.findUnique({
       where: { id },
-      include: { mentorship: true }
+      include: {
+        mentorship: {
+          include: {
+            mentor: { include: { user: { select: { id: true, name: true } } } },
+            student: { include: { user: { select: { id: true, name: true } } } }
+          }
+        }
+      }
     });
 
     if (!session) {
@@ -253,8 +285,8 @@ const cancelSession = async (req, res) => {
     }
 
     const isAuthorized = 
-      (role === 'STUDENT' && session.mentorship.studentId === req.user.studentProfile?.id) ||
-      (role === 'MENTOR' && session.mentorship.mentorId === req.user.mentorProfile?.id);
+      isStudentParticipant(req.user, session.mentorship.studentId) ||
+      isMentorParticipant(req.user, session.mentorship.mentorId);
 
     if (!isAuthorized) {
       return res.status(403).json({ status: 'error', message: 'Access denied.' });
@@ -266,24 +298,25 @@ const cancelSession = async (req, res) => {
     });
 
     const scheduledTime = new Date(session.scheduledAt).toLocaleString();
+    const isCancelledByStudent = isStudentParticipant(req.user, session.mentorship.studentId);
 
-    if (role === 'STUDENT') {
+    if (isCancelledByStudent) {
       // Notify mentor
       await notificationService.createNotification(
         session.mentorship.mentor.userId,
         'GENERAL',
         'Session Cancelled',
-        `Your mentoring session with ${session.mentorship.student.user.name} scheduled for ${scheduledTime} has been cancelled.`,
+        `Your mentoring session scheduled for ${scheduledTime} has been cancelled by the student.`,
         session.id,
         'SESSION'
       );
-    } else if (role === 'MENTOR') {
+    } else {
       // Notify student
       await notificationService.createNotification(
         session.mentorship.student.userId,
         'GENERAL',
         'Session Cancelled',
-        `Your mentoring session with ${session.mentorship.mentor.user.name} scheduled for ${scheduledTime} has been cancelled.`,
+        `Your mentoring session scheduled for ${scheduledTime} has been cancelled by the mentor.`,
         session.id,
         'SESSION'
       );
@@ -297,14 +330,15 @@ const cancelSession = async (req, res) => {
 
 /**
  * PUT /api/sessions/:id/complete
- * Only mentor can mark as completed.
+ * Only an approved mentor (professional or peer) can mark as completed.
  */
 const completeSession = async (req, res) => {
   try {
     const { id } = req.params;
     
-    if (req.user.role !== 'MENTOR') {
-      return res.status(403).json({ status: 'error', message: 'Only mentors can complete sessions.' });
+    // Use capability check instead of role check
+    if (!isApprovedMentor(req.user)) {
+      return res.status(403).json({ status: 'error', message: 'Only approved mentors can complete sessions.' });
     }
 
     const session = await prisma.session.findUnique({
@@ -316,7 +350,7 @@ const completeSession = async (req, res) => {
       return res.status(404).json({ status: 'error', message: 'Session not found.' });
     }
 
-    if (session.mentorship.mentorId !== req.user.mentorProfile?.id) {
+    if (!isMentorParticipant(req.user, session.mentorship.mentorId)) {
       return res.status(403).json({ status: 'error', message: 'Access denied.' });
     }
 
@@ -338,7 +372,6 @@ const completeSession = async (req, res) => {
 const getLiveSession = async (req, res) => {
   try {
     const { id } = req.params;
-    const { role } = req.user;
 
     const session = await prisma.session.findUnique({
       where: { id },
@@ -357,10 +390,10 @@ const getLiveSession = async (req, res) => {
       return res.status(404).json({ status: 'error', message: 'Session not found.' });
     }
 
-    // Check authorization
+    // Check authorization via profile IDs
     const isAuthorized = 
-      (role === 'STUDENT' && session.mentorship.studentId === req.user.studentProfile?.id) ||
-      (role === 'MENTOR' && session.mentorship.mentorId === req.user.mentorProfile?.id);
+      isStudentParticipant(req.user, session.mentorship.studentId) ||
+      isMentorParticipant(req.user, session.mentorship.mentorId);
 
     if (!isAuthorized) {
       return res.status(403).json({ status: 'error', message: 'Access denied.' });

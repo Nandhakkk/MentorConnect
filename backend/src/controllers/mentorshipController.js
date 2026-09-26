@@ -1,8 +1,10 @@
 const prisma = require('../config/db');
+const { isApprovedMentor, isMentorParticipant, isStudentParticipant } = require('../utils/mentorCapability');
 
 /**
  * POST /api/mentorships
  * Create a new mentorship request. Only STUDENTS can create.
+ * Supports both PROFESSIONAL and PEER approved mentors as targets.
  */
 const createMentorship = async (req, res) => {
   try {
@@ -20,12 +22,12 @@ const createMentorship = async (req, res) => {
       return res.status(400).json({ status: 'error', message: 'mentorId is required.' });
     }
 
-    // Check if mentor is approved, professional, and eligible
+    // Check if mentor is approved (PROFESSIONAL or PEER) and eligible
     const mentor = await prisma.mentorProfile.findFirst({
       where: { 
         id: mentorId, 
         status: 'APPROVED', 
-        mentorType: 'PROFESSIONAL',
+        mentorType: { in: ['PROFESSIONAL', 'PEER'] },
         isAvailable: true 
       },
       include: { user: true }
@@ -38,7 +40,11 @@ const createMentorship = async (req, res) => {
       return res.status(403).json({ status: 'error', message: 'Mentor is suspended.' });
     }
 
-    // Prevent self-mentorship (if user somehow has both profiles or tests it)
+    if (!mentor.user.isActive) {
+      return res.status(403).json({ status: 'error', message: 'Mentor account is not active.' });
+    }
+
+    // Prevent self-mentorship
     if (mentor.userId === req.user.id) {
       return res.status(400).json({ status: 'error', message: 'You cannot mentor yourself.' });
     }
@@ -123,6 +129,7 @@ const rejectMentorship = (req, res) => updateMentorshipRequest(req, res, 'CANCEL
 /**
  * GET /api/mentorships/student
  * Return the authenticated student's mentorships.
+ * Works for both regular students and peer mentors (who are also students).
  */
 const getStudentMentorships = async (req, res) => {
   try {
@@ -186,13 +193,11 @@ const cancelMentorship = async (req, res) => {
 /**
  * GET /api/mentorships/mentor
  * Return mentorships belonging to the authenticated mentor.
+ * Works for both PROFESSIONAL and PEER approved mentors.
  */
 const getMentorMentorships = async (req, res) => {
   try {
-    if (req.user.role !== 'MENTOR') {
-      return res.status(403).json({ status: 'error', message: 'Access denied.' });
-    }
-
+    // requireApprovedMentor middleware already checked capability
     const profile = req.user.mentorProfile;
     if (!profile) return res.status(403).json({ status: 'error', message: 'Profile required.' });
 
@@ -216,7 +221,8 @@ const getMentorMentorships = async (req, res) => {
 
 /**
  * GET /api/mentorships/:id
- * Return a specific mentorship (allowed for both STUDENT and MENTOR involved).
+ * Return a specific mentorship (allowed for both STUDENT and MENTOR involved, or ADMIN).
+ * Peer mentors can access as mentor participant via mentorProfile.
  */
 const getMentorshipById = async (req, res) => {
   try {
@@ -242,10 +248,11 @@ const getMentorshipById = async (req, res) => {
       return res.status(404).json({ status: 'error', message: 'Mentorship not found.' });
     }
 
+    // Capability-based authorization: check by profile ID match rather than role
     const { role, studentProfile, mentorProfile } = req.user;
     const isAuthorized = 
-      (role === 'STUDENT' && mentorship.studentId === studentProfile?.id) ||
-      (role === 'MENTOR' && mentorship.mentorId === mentorProfile?.id) ||
+      isStudentParticipant(req.user, mentorship.studentId) ||
+      isMentorParticipant(req.user, mentorship.mentorId) ||
       role === 'ADMIN';
 
     if (!isAuthorized) {

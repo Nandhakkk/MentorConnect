@@ -6,16 +6,11 @@ const authMiddleware = require('../middleware/authMiddleware');
 // All session routes require authentication
 router.use(authMiddleware.authenticateToken);
 
-const requireApprovedMentorWhenMentor = (req, res, next) => {
-  if (req.user.role !== 'MENTOR') return next();
-  return authMiddleware.requireApprovedMentor(req, res, next);
-};
-
-router.get('/', requireApprovedMentorWhenMentor, sessionController.getSessions);
+router.get('/', sessionController.getSessions);
 router.post('/', sessionController.createSession);
-router.get('/:id', requireApprovedMentorWhenMentor, sessionController.getSessionById);
-router.get('/:id/live', requireApprovedMentorWhenMentor, sessionController.getLiveSession);
-router.put('/:id/cancel', requireApprovedMentorWhenMentor, sessionController.cancelSession);
+router.get('/:id', sessionController.getSessionById);
+router.get('/:id/live', sessionController.getLiveSession);
+router.put('/:id/cancel', sessionController.cancelSession);
 router.put('/:id/complete', authMiddleware.requireApprovedMentor, sessionController.completeSession);
 
 module.exports = router;

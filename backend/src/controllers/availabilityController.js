@@ -1,15 +1,14 @@
 const prisma = require('../config/db');
+const { isApprovedMentor } = require('../utils/mentorCapability');
 
 /**
  * GET /api/availability
  * Get all availability slots for the authenticated mentor.
+ * Works for both PROFESSIONAL and PEER approved mentors.
  */
 const getAvailability = async (req, res) => {
   try {
-    if (req.user.role !== 'MENTOR') {
-      return res.status(403).json({ status: 'error', message: 'Only MENTOR users can manage availability.' });
-    }
-
+    // requireApprovedMentor middleware already validates capability
     const mentorProfile = req.user.mentorProfile;
     if (!mentorProfile) {
       return res.status(403).json({ status: 'error', message: 'Mentor profile not found.' });
@@ -32,11 +31,11 @@ const getAvailability = async (req, res) => {
  */
 const createAvailability = async (req, res) => {
   try {
-    if (req.user.role !== 'MENTOR') {
-      return res.status(403).json({ status: 'error', message: 'Access denied.' });
+    const mentorProfile = req.user.mentorProfile;
+    if (!mentorProfile) {
+      return res.status(403).json({ status: 'error', message: 'Mentor profile not found.' });
     }
 
-    const mentorProfile = req.user.mentorProfile;
     const { dayOfWeek, startTime, endTime } = req.body;
 
     if (!dayOfWeek || !startTime || !endTime) {
@@ -64,11 +63,11 @@ const createAvailability = async (req, res) => {
  */
 const updateAvailability = async (req, res) => {
   try {
-    if (req.user.role !== 'MENTOR') {
-      return res.status(403).json({ status: 'error', message: 'Access denied.' });
+    const mentorProfile = req.user.mentorProfile;
+    if (!mentorProfile) {
+      return res.status(403).json({ status: 'error', message: 'Mentor profile not found.' });
     }
 
-    const mentorProfile = req.user.mentorProfile;
     const { id } = req.params;
     const { dayOfWeek, startTime, endTime, isActive } = req.body;
 
@@ -102,11 +101,11 @@ const updateAvailability = async (req, res) => {
  */
 const deleteAvailability = async (req, res) => {
   try {
-    if (req.user.role !== 'MENTOR') {
-      return res.status(403).json({ status: 'error', message: 'Access denied.' });
+    const mentorProfile = req.user.mentorProfile;
+    if (!mentorProfile) {
+      return res.status(403).json({ status: 'error', message: 'Mentor profile not found.' });
     }
 
-    const mentorProfile = req.user.mentorProfile;
     const { id } = req.params;
 
     const existing = await prisma.mentorAvailability.findFirst({

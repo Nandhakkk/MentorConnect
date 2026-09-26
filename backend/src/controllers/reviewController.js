@@ -1,5 +1,6 @@
 const prisma = require('../config/db');
 const notificationService = require('../services/notificationService');
+const { isMentorParticipant, isStudentParticipant } = require('../utils/mentorCapability');
 
 /**
  * CREATE REVIEW
@@ -46,18 +47,18 @@ const createReview = async (req, res) => {
       return res.status(400).json({ status: 'error', message: 'Reviews can only be submitted for completed sessions' });
     }
 
-    // Determine authorization and reviewee
+    // Determine the user's role in this session using capability helpers
+    // A peer mentor (role=STUDENT) who is the mentor participant should review as MENTOR
+    let effectiveRole;
     let revieweeId;
-    if (userRole === 'STUDENT') {
-      if (session.mentorship.student.userId !== userId) {
-        return res.status(403).json({ status: 'error', message: 'Not authorized for this session' });
-      }
+    if (isMentorParticipant(req.user, session.mentorship.mentorId)) {
+      effectiveRole = 'MENTOR';
+      revieweeId = session.mentorship.student.userId;
+    } else if (isStudentParticipant(req.user, session.mentorship.studentId)) {
+      effectiveRole = 'STUDENT';
       revieweeId = session.mentorship.mentor.userId;
     } else {
-      if (session.mentorship.mentor.userId !== userId) {
-        return res.status(403).json({ status: 'error', message: 'Not authorized for this session' });
-      }
-      revieweeId = session.mentorship.student.userId;
+      return res.status(403).json({ status: 'error', message: 'Not authorized for this session' });
     }
 
     // The DB has @@unique([sessionId, reviewerRole]) protecting duplicates automatically
@@ -66,7 +67,7 @@ const createReview = async (req, res) => {
       where: {
         sessionId_reviewerRole: {
           sessionId,
-          reviewerRole: userRole
+          reviewerRole: effectiveRole
         }
       }
     });
@@ -82,13 +83,13 @@ const createReview = async (req, res) => {
         revieweeId: revieweeId,
         rating: parsedRating,
         comment: comment || null,
-        reviewerRole: userRole
+        reviewerRole: effectiveRole
       }
     });
 
     // Notify reviewee
-    const notificationTitle = userRole === 'STUDENT' ? 'New Mentor Review' : 'New Student Feedback';
-    const notificationMsg = userRole === 'STUDENT' 
+    const notificationTitle = effectiveRole === 'STUDENT' ? 'New Mentor Review' : 'New Student Feedback';
+    const notificationMsg = effectiveRole === 'STUDENT' 
       ? 'You received a new review from a student after your mentoring session.'
       : 'You received feedback from your mentor after your mentoring session.';
 

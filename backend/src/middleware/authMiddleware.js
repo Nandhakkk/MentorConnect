@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const prisma = require('../config/db');
+const { isApprovedMentor } = require('../utils/mentorCapability');
 
 /**
  * Authentication Middleware
@@ -47,6 +48,8 @@ const authenticateToken = async (req, res, next) => {
         name: true,
         email: true,
         role: true,
+        isActive: true,
+        isSuspended: true,
         createdAt: true,
         updatedAt: true,
         studentProfile: true,
@@ -105,9 +108,9 @@ const requireApprovedMentor = (req, res, next) => {
     });
   }
 
-  // A user is an approved mentor if they have an approved mentor profile, 
-  // regardless of whether their role is MENTOR (Professional) or STUDENT (Peer).
-  if (!req.user.mentorProfile || req.user.mentorProfile.status !== 'APPROVED') {
+  // Use centralized capability helper — checks approved MentorProfile,
+  // mentorType is PROFESSIONAL or PEER, account active, and not suspended.
+  if (!isApprovedMentor(req.user)) {
     return res.status(403).json({
       status: 'error',
       message: 'Forbidden: You must be an approved mentor (Professional or Peer) to access this resource.'
@@ -117,8 +120,12 @@ const requireApprovedMentor = (req, res, next) => {
   next();
 };
 
+// authorizeRoles is an alias for requireRole, used by assignmentRoutes
+const authorizeRoles = requireRole;
+
 module.exports = {
   authenticateToken,
   requireRole,
+  authorizeRoles,
   requireApprovedMentor
 };

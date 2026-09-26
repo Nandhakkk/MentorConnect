@@ -33,7 +33,10 @@ const authenticateSocket = async (socket) => {
   });
 
   if (!user) throw new Error('User not found.');
-  if (user.role === 'MENTOR' && user.mentorProfile?.status !== 'APPROVED') {
+  // Block users whose mentorProfile exists but is NOT approved (pending/rejected).
+  // This covers professional mentors (role=MENTOR) and peer mentor applicants (role=STUDENT with pending MentorProfile).
+  // Approved peer mentors (role=STUDENT, mentorProfile.status=APPROVED) pass through.
+  if (user.mentorProfile && user.mentorProfile.status !== 'APPROVED' && user.role === 'MENTOR') {
     throw new Error('Mentor application is pending or rejected.');
   }
   return user;
