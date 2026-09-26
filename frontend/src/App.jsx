@@ -47,6 +47,7 @@ import CreateAssignment from './pages/mentor/CreateAssignment';
 import ReviewAssignment from './pages/mentor/ReviewAssignment';
 import MentorAvailability from './pages/mentor/MentorAvailability';
 import MentorMessages from './pages/mentor/MentorMessages';
+import MentorEarnings from './pages/mentor/MentorEarnings';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminMentors from './pages/admin/AdminMentors';
@@ -57,6 +58,7 @@ import AdminMentorApplications from './pages/admin/AdminMentorApplications';
 import AdminMentorApplicationReview from './pages/admin/AdminMentorApplicationReview';
 import AdminPeerMentorApplications from './pages/admin/AdminPeerMentorApplications';
 import AdminPeerMentorApplicationReview from './pages/admin/AdminPeerMentorApplicationReview';
+import AdminFinanceDashboard from './pages/admin/AdminFinanceDashboard';
 import GuardianDashboard from './pages/guardian/GuardianDashboard';
 
 // Placeholder pages for upcoming features
@@ -128,6 +130,7 @@ export default function App() {
             <Route path="mentor-dashboard/assignments/:id/review" element={<ReviewAssignment />} />
             <Route path="mentor-dashboard/availability" element={<MentorAvailability />} />
             <Route path="mentor-dashboard/profile" element={<PeerMentorProfileForm />} />
+            <Route path="mentor-dashboard/earnings" element={<MentorEarnings />} />
             <Route index element={<Navigate to="dashboard" replace />} />
           </Route>
 
@@ -154,6 +157,7 @@ export default function App() {
             <Route path="availability" element={<MentorAvailability />} />
             <Route path="profile" element={<MentorProfileForm />} />
             <Route path="application" element={<MentorApplication />} />
+            <Route path="earnings" element={<MentorEarnings />} />
             <Route index element={<Navigate to="dashboard" replace />} />
           </Route>
 
@@ -176,6 +180,7 @@ export default function App() {
             <Route path="complaints/:id" element={<AdminComplaintReview />} />
             <Route path="peer-mentor-applications" element={<AdminPeerMentorApplications />} />
             <Route path="peer-mentor-applications/:id" element={<AdminPeerMentorApplicationReview />} />
+            <Route path="finance" element={<AdminFinanceDashboard />} />
             <Route index element={<Navigate to="dashboard" replace />} />
           </Route>
 

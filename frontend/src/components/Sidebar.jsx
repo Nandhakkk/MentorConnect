@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-const icons = { Dashboard: '▦', Goals: '◎', 'Find Mentor': '⌕', 'My Mentors': '↔', Sessions: '◷', Messages: '□', Assignments: '▤', 'AI Assistant': '✦', Profile: '◉', Students: '♙', Availability: '◴', Users: '♧', Mentors: '♢', Mentorships: '⛓', 'Peer Mentor': '🎓', 'Peer Apps': '🎓', 'My Students': '♙', 'Mentor Sessions': '◷', 'Mentor Assignments': '▤', 'Mentor Availability': '◴', 'Mentor Profile': '◉', 'Mentor Messages': '□', 'Mentor Reviews': '★' };
+const icons = { Dashboard: '▦', Goals: '◎', 'Find Mentor': '⌕', 'My Mentors': '↔', Sessions: '◷', Messages: '□', Assignments: '▤', 'AI Assistant': '✦', Profile: '◉', Students: '♙', Availability: '◴', Users: '♧', Mentors: '♢', Mentorships: '⛓', 'Peer Mentor': '🎓', 'Peer Apps': '🎓', 'My Students': '♙', 'Mentor Sessions': '◷', 'Mentor Assignments': '▤', 'Mentor Availability': '◴', 'Mentor Profile': '◉', 'Mentor Messages': '□', 'Mentor Reviews': '★', Earnings: '₹', 'Mentor Earnings': '₹', Finance: '₹' };
 
 export default function Sidebar() {
   const { user } = useAuth();
@@ -29,13 +29,14 @@ export default function Sidebar() {
     ['Mentor Sessions', '/student/mentor-dashboard/sessions'],
     ['Mentor Assignments', '/student/mentor-dashboard/assignments'],
     ['Mentor Availability', '/student/mentor-dashboard/availability'],
+    ['Mentor Earnings', '/student/mentor-dashboard/earnings'],
     ['Mentor Profile', '/student/mentor-dashboard/profile'],
   ] : [];
 
   const linksByRole = {
     STUDENT: [...studentLinks, ...peerMentorLinks],
-    MENTOR: [['Dashboard', '/mentor/dashboard'], ['Students', '/mentor/students'], ['Sessions', '/mentor/sessions'], ['Assignments', '/mentor/assignments'], ['Availability', '/mentor/availability'], ['Messages', '/mentor/messages'], ['Profile', '/mentor/profile']],
-    ADMIN: [['Dashboard', '/admin/dashboard'], ['Users', '/admin/users'], ['Mentors', '/admin/mentors'], ['Mentorships', '/admin/mentorships'], ['Peer Apps', '/admin/peer-mentor-applications']]
+    MENTOR: [['Dashboard', '/mentor/dashboard'], ['Students', '/mentor/students'], ['Sessions', '/mentor/sessions'], ['Assignments', '/mentor/assignments'], ['Availability', '/mentor/availability'], ['Messages', '/mentor/messages'], ['Earnings', '/mentor/earnings'], ['Profile', '/mentor/profile']],
+    ADMIN: [['Dashboard', '/admin/dashboard'], ['Users', '/admin/users'], ['Mentors', '/admin/mentors'], ['Mentorships', '/admin/mentorships'], ['Peer Apps', '/admin/peer-mentor-applications'], ['Finance', '/admin/finance']]
   };
   const navLinks = linksByRole[user?.role] || [];
 

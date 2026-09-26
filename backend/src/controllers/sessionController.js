@@ -343,7 +343,10 @@ const completeSession = async (req, res) => {
 
     const session = await prisma.session.findUnique({
       where: { id },
-      include: { mentorship: true }
+      include: { 
+        mentorship: true,
+        payment: { include: { payout: true } }
+      }
     });
 
     if (!session) {
@@ -354,12 +357,41 @@ const completeSession = async (req, res) => {
       return res.status(403).json({ status: 'error', message: 'Access denied.' });
     }
 
-    const updated = await prisma.session.update({
-      where: { id },
-      data: { status: 'COMPLETED' }
+    if (session.status === 'COMPLETED') {
+      return res.status(400).json({ status: 'error', message: 'Session is already completed.' });
+    }
+
+    if (session.status !== 'SCHEDULED') {
+      return res.status(400).json({ status: 'error', message: 'Only scheduled sessions can be completed.' });
+    }
+
+    if (!session.payment || session.payment.status !== 'PAID') {
+      return res.status(400).json({ status: 'error', message: 'Session cannot be completed because it is not paid.' });
+    }
+
+    const updated = await prisma.$transaction(async (tx) => {
+      const sess = await tx.session.update({
+        where: { id },
+        data: { status: 'COMPLETED' }
+      });
+
+      // Create exactly one PayoutRecord if it doesn't exist
+      if (!session.payment.payout) {
+        await tx.payoutRecord.create({
+          data: {
+            mentorId: session.mentorship.mentorId,
+            paymentId: session.payment.id,
+            grossAmount: session.payment.amount,
+            platformFee: session.payment.platformFee,
+            netAmount: session.payment.mentorAmount,
+            status: 'ELIGIBLE'
+          }
+        });
+      }
+      return sess;
     });
 
-    return res.status(200).json({ status: 'success', message: 'Session marked as completed.', session: updated });
+    return res.status(200).json({ status: 'success', message: 'Session marked as completed and payout eligible.', session: updated });
   } catch (err) {
     return res.status(500).json({ status: 'error', message: 'Failed to complete session.', details: err.message });
   }

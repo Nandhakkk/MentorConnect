@@ -21,6 +21,7 @@ const assignmentRoutes = require('./assignmentRoutes');
 const reviewRoutes = require('./reviewRoutes');
 const complaintRoutes = require('./complaintRoutes');
 const peerMentorRoutes = require('./peerMentorRoutes');
+const financeRoutes = require('./financeRoutes');
 // Mount sub-routers
 router.use('/health', healthRoutes);
 router.use('/admin', adminRoutes);
@@ -42,5 +43,6 @@ router.use('/assignments', assignmentRoutes);
 router.use('/reviews', reviewRoutes);
 router.use('/complaints', complaintRoutes);
 router.use('/peer-mentor', peerMentorRoutes);
+router.use('/finance', financeRoutes);
 
 module.exports = router;
