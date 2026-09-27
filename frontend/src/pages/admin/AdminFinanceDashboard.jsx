@@ -74,22 +74,22 @@ export default function AdminFinanceDashboard() {
       {error && <div style={{ color: '#ef4444', marginBottom: '1rem' }}>{error}</div>}
 
       {summary && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
-          <div className="glass-card" style={{ padding: '1.5rem', textAlign: 'center', borderTop: '4px solid var(--accent-primary)' }}>
-            <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Gross Volume</div>
-            <div style={{ fontSize: '1.8rem', fontWeight: 700, color: 'var(--text-primary)' }}>₹{summary.totalStudentPayments}</div>
+        <div className="finance-stats-cards">
+          <div className="finance-stat-card" style={{ borderTop: '4px solid var(--accent-primary)' }}>
+            <div className="finance-stat-label">Gross Volume</div>
+            <div className="finance-stat-value">₹{summary.totalStudentPayments}</div>
           </div>
-          <div className="glass-card" style={{ padding: '1.5rem', textAlign: 'center', borderTop: '4px solid #10b981' }}>
-            <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Platform Income</div>
-            <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#10b981' }}>₹{summary.totalPlatformIncome}</div>
+          <div className="finance-stat-card" style={{ borderTop: '4px solid #10b981' }}>
+            <div className="finance-stat-label">Platform Income</div>
+            <div className="finance-stat-value" style={{ color: '#10b981' }}>₹{summary.totalPlatformIncome}</div>
           </div>
-          <div className="glass-card" style={{ padding: '1.5rem', textAlign: 'center', borderTop: '4px solid #3b82f6' }}>
-            <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Pending Payouts (Eligible)</div>
-            <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#3b82f6' }}>₹{summary.eligibleAmount} <span style={{fontSize:'1rem', color:'var(--text-muted)'}}>({summary.eligibleCount})</span></div>
+          <div className="finance-stat-card" style={{ borderTop: '4px solid #3b82f6' }}>
+            <div className="finance-stat-label">Pending Payouts (Eligible)</div>
+            <div className="finance-stat-value" style={{ color: '#3b82f6' }}>₹{summary.eligibleAmount} <span style={{fontSize:'1rem', color:'var(--text-muted)'}}>({summary.eligibleCount})</span></div>
           </div>
-          <div className="glass-card" style={{ padding: '1.5rem', textAlign: 'center', borderTop: '4px solid #f59e0b' }}>
-            <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Processing Payouts</div>
-            <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#f59e0b' }}>₹{summary.processingAmount} <span style={{fontSize:'1rem', color:'var(--text-muted)'}}>({summary.processingCount})</span></div>
+          <div className="finance-stat-card" style={{ borderTop: '4px solid #f59e0b' }}>
+            <div className="finance-stat-label">Processing Payouts</div>
+            <div className="finance-stat-value" style={{ color: '#f59e0b' }}>₹{summary.processingAmount} <span style={{fontSize:'1rem', color:'var(--text-muted)'}}>({summary.processingCount})</span></div>
           </div>
         </div>
       )}
@@ -129,7 +129,7 @@ export default function AdminFinanceDashboard() {
                     {(payout.status === 'ELIGIBLE' || payout.status === 'FAILED') && (
                       <button 
                         onClick={() => setActionModal({ isOpen: true, payoutId: payout.id, action: 'PROCESS', providerId: '' })}
-                        className="btn btn-primary" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', background: '#3b82f6', border: 'none' }}
+                        className="btn btn-primary" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', minHeight: 'auto' }}
                       >
                         Process
                       </button>
@@ -138,13 +138,13 @@ export default function AdminFinanceDashboard() {
                       <>
                         <button 
                           onClick={() => setActionModal({ isOpen: true, payoutId: payout.id, action: 'PAID', providerId: '' })}
-                          className="btn btn-primary" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', background: '#10b981', border: 'none' }}
+                          className="btn btn-primary" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', background: '#10b981', minHeight: 'auto' }}
                         >
                           Mark Paid
                         </button>
                         <button 
                           onClick={() => setActionModal({ isOpen: true, payoutId: payout.id, action: 'FAILED', providerId: '' })}
-                          className="btn btn-secondary" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', background: 'transparent', color: '#ef4444', border: '1px solid #ef4444' }}
+                          className="btn btn-danger" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', minHeight: 'auto' }}
                         >
                           Fail
                         </button>
@@ -179,9 +179,9 @@ export default function AdminFinanceDashboard() {
                 <input
                   type="text"
                   placeholder="Provider / UTR Reference (Optional)"
+                  className="form-input"
                   value={actionModal.providerId}
                   onChange={e => setActionModal({ ...actionModal, providerId: e.target.value })}
-                  style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
                 />
               </div>
             )}
@@ -195,13 +195,13 @@ export default function AdminFinanceDashboard() {
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
               <button 
                 onClick={() => setActionModal({ isOpen: false, payoutId: null, action: null, providerId: '' })}
-                className="btn btn-secondary" style={{ padding: '0.5rem 1.5rem' }}
+                className="btn btn-secondary" 
               >
                 Cancel
               </button>
               <button 
                 onClick={handleAction}
-                className="btn btn-primary" style={{ padding: '0.5rem 1.5rem', background: actionModal.action === 'FAILED' ? '#ef4444' : 'var(--accent-primary)', border: 'none' }}
+                className={`btn ${actionModal.action === 'FAILED' ? 'btn-danger' : 'btn-primary'}`}
               >
                 Confirm
               </button>

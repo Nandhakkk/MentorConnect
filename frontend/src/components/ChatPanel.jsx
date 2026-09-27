@@ -82,16 +82,19 @@ export default function ChatPanel({ mentorship, otherPartyName }) {
   }
 
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', background: 'var(--bg-primary)' }}>
       {/* Chat header */}
-      <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid var(--border-subtle)', flexShrink: 0 }}>
-        <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '1rem' }}>{otherPartyName}</h3>
-        <span style={{ fontSize: '0.75rem', color: '#10b981' }}>● Active mentorship</span>
+      <div className="chat-header">
+        <h3>
+          <span className="chat-status-indicator"></span>
+          {otherPartyName}
+        </h3>
+        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Active mentorship</span>
       </div>
 
       {/* Messages area */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-        {error && <div style={{ color: '#ef4444', textAlign: 'center' }}>{error}</div>}
+      <div className="chat-messages">
+        {error && <div style={{ color: 'var(--error)', textAlign: 'center' }}>{error}</div>}
 
         {messages.length === 0 ? (
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
@@ -101,29 +104,18 @@ export default function ChatPanel({ mentorship, otherPartyName }) {
           messages.map((msg) => {
             const isMine = msg.sender?.id === user?.id || msg.senderId === user?.id;
             return (
-              <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignItems: isMine ? 'flex-end' : 'flex-start' }}>
+              <div key={msg.id} className={`chat-message ${isMine ? 'self' : 'other'}`}>
                 {!isMine && (
                   <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem', marginLeft: '0.25rem' }}>
                     {msg.sender?.name}
                   </span>
                 )}
-                <div style={{
-                  maxWidth: '65%',
-                  padding: '0.6rem 1rem',
-                  borderRadius: isMine ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                  background: isMine
-                    ? 'linear-gradient(135deg, #6366f1, #a855f7)'
-                    : 'rgba(255,255,255,0.08)',
-                  color: 'white',
-                  fontSize: '0.95rem',
-                  lineHeight: 1.5,
-                  wordBreak: 'break-word'
-                }}>
+                <div className="message-bubble">
                   {msg.content}
                 </div>
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.2rem', marginLeft: isMine ? 0 : '0.25rem', marginRight: isMine ? '0.25rem' : 0 }}>
+                <div className="message-meta">
                   {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </span>
+                </div>
               </div>
             );
           })
@@ -132,39 +124,30 @@ export default function ChatPanel({ mentorship, otherPartyName }) {
       </div>
 
       {/* Input area */}
-      <form onSubmit={handleSend} style={{ padding: '1rem 1.5rem', borderTop: '1px solid var(--border-subtle)', display: 'flex', gap: '0.75rem', flexShrink: 0 }}>
-        <input
-          type="text"
+      <form className="chat-input-area" onSubmit={handleSend}>
+        <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Type a message..."
-          style={{
-            flex: 1,
-            padding: '0.75rem 1rem',
-            borderRadius: '24px',
-            border: '1px solid var(--border-subtle)',
-            background: 'rgba(255,255,255,0.06)',
-            color: 'white',
-            outline: 'none',
-            fontSize: '0.95rem'
+          className="form-input"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              handleSend(e);
+            }
           }}
+          style={{ flex: 1 }}
         />
         <button
           type="submit"
+          className="btn btn-primary chat-send-btn"
           disabled={!input.trim()}
-          style={{
-            padding: '0.75rem 1.5rem',
-            borderRadius: '24px',
-            background: input.trim() ? 'linear-gradient(135deg, #6366f1, #a855f7)' : 'rgba(255,255,255,0.08)',
-            border: 'none',
-            color: 'white',
-            cursor: input.trim() ? 'pointer' : 'default',
-            fontWeight: 600,
-            fontSize: '0.9rem',
-            transition: 'background 0.2s'
-          }}
+          aria-label="Send message"
         >
-          Send
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
         </button>
       </form>
     </div>

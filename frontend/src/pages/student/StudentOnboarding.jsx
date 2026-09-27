@@ -61,12 +61,12 @@ export default function StudentOnboarding() {
   };
 
   return (
-    <div className="container" style={{ maxWidth: '600px', padding: '2rem 1rem' }}>
-      <div className="glass-card" style={{ padding: '2rem' }}>
-        <h2 style={{ marginBottom: '0.5rem', fontWeight: 800 }}>Complete Your Profile</h2>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem', fontSize: '0.9rem' }}>
-          We use this information to understand your learning goals and recommend suitable mentors and learning paths.
-        </p>
+    <div className="page-content" style={{ display: 'flex', justifyContent: 'center' }}>
+      <div className="centered-form-layout" style={{ width: '100%' }}>
+        <div className="centered-form-header">
+          <h2>Complete Your Profile</h2>
+          <p>We use this information to understand your learning goals and recommend suitable mentors and learning paths.</p>
+        </div>
 
         {error && (
           <div style={{ padding: '1rem', background: 'var(--error-bg)', color: 'var(--error)', borderRadius: 'var(--radius-md)', marginBottom: '1.5rem' }}>
@@ -75,10 +75,11 @@ export default function StudentOnboarding() {
         )}
 
         {/* Progress Indicator */}
-        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '2rem' }}>
-          {[1, 2, 3, 4, 5].map(s => (
-            <div key={s} style={{ height: '6px', flex: 1, borderRadius: '3px', background: s <= step ? 'var(--accent-primary)' : 'rgba(255,255,255,0.1)' }} />
-          ))}
+        <div className="form-progress">
+          Step {step} of 5
+          <div className="form-progress-bar">
+            <div className="form-progress-fill" style={{ width: `${(step / 5) * 100}%` }}></div>
+          </div>
         </div>
 
         <form onSubmit={step === 5 ? handleSubmit : (e) => { e.preventDefault(); handleNext(); }}>
@@ -159,20 +160,20 @@ export default function StudentOnboarding() {
             </div>
           )}
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2rem' }}>
+          <div className="form-actions">
             {step > 1 ? (
               <button type="button" className="btn btn-secondary" onClick={handleBack} disabled={loading}>
-                Back
+                Previous
               </button>
             ) : <div />}
             
             {step < 5 ? (
               <button type="submit" className="btn btn-primary">
-                Next
+                Continue
               </button>
             ) : (
               <button type="submit" className="btn btn-primary" disabled={loading}>
-                {loading ? 'Saving...' : 'Complete My Profile'}
+                {loading ? 'Saving...' : 'Complete Profile'}
               </button>
             )}
           </div>

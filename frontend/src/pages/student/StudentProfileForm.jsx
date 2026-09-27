@@ -102,138 +102,147 @@ export default function StudentProfileForm() {
         </div>
       </div>
 
-      <div className="glass-card" style={{ maxWidth: '600px', padding: '2rem' }}>
-        <form onSubmit={handleSave}>
-          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Full Name</label>
-              <input 
-                type="text" 
-                value={user?.name || ''} 
-                disabled 
-                style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)', cursor: 'not-allowed' }}
-              />
+      <div className="profile-grid">
+        <div className="profile-sidebar">
+          <div className="glass-card profile-header-card">
+            <div className="profile-large-avatar">
+              {user?.name?.charAt(0)?.toUpperCase() || 'U'}
             </div>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Email</label>
-              <input 
-                type="email" 
-                value={user?.email || ''} 
-                disabled 
-                style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)', cursor: 'not-allowed' }}
-              />
+            <h3 style={{ fontSize: '1.25rem', marginBottom: '0.25rem' }}>{user?.name}</h3>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>Student</p>
+            <div style={{ textAlign: 'left', marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-subtle)' }}>
+              <div className="info-item" style={{ marginBottom: '0.75rem' }}>
+                <span className="info-label">Email</span>
+                <span className="info-value" style={{ wordBreak: 'break-all' }}>{user?.email}</span>
+              </div>
+              <div className="info-item">
+                <span className="info-label">Role</span>
+                <span className="info-value">Student</span>
+              </div>
             </div>
           </div>
+        </div>
 
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Career Goal</label>
-            <input 
-              type="text" 
-              value={profile.careerGoal} 
-              onChange={e => setProfile({...profile, careerGoal: e.target.value})}
-              placeholder="e.g. Become a Full-Stack Developer"
-              style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
-            />
-          </div>
+        <div className="profile-main">
+          <div className="glass-card profile-section">
+            <h3>Profile Details</h3>
+            <form onSubmit={handleSave}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
+                <div>
+                  <label className="form-label">Career Goal</label>
+                  <input 
+                    type="text" 
+                    className="form-input"
+                    value={profile.careerGoal} 
+                    onChange={e => setProfile({...profile, careerGoal: e.target.value})}
+                    placeholder="e.g. Become a Full-Stack Developer"
+                  />
+                </div>
+                <div>
+                  <label className="form-label">Education</label>
+                  <input 
+                    type="text" 
+                    className="form-input"
+                    value={profile.education} 
+                    onChange={e => setProfile({...profile, education: e.target.value})}
+                    placeholder="e.g. MCA at XYZ University"
+                  />
+                </div>
+              </div>
 
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Education</label>
-            <input 
-              type="text" 
-              value={profile.education} 
-              onChange={e => setProfile({...profile, education: e.target.value})}
-              placeholder="e.g. MCA at XYZ University"
-              style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
-            />
-          </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
+                <div>
+                  <label className="form-label">Skills</label>
+                  <input 
+                    type="text" 
+                    className="form-input"
+                    value={profile.skills} 
+                    onChange={e => setProfile({...profile, skills: e.target.value})}
+                    placeholder="e.g. JavaScript, React, SQL"
+                  />
+                </div>
+                <div>
+                  <label className="form-label">Interests</label>
+                  <input 
+                    type="text" 
+                    className="form-input"
+                    value={profile.interests} 
+                    onChange={e => setProfile({...profile, interests: e.target.value})}
+                    placeholder="e.g. Web Development, AI"
+                  />
+                </div>
+              </div>
 
-          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Skills</label>
-              <input 
-                type="text" 
-                value={profile.skills} 
-                onChange={e => setProfile({...profile, skills: e.target.value})}
-                placeholder="e.g. JavaScript, React, SQL"
-                style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
-              />
-            </div>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Interests</label>
-              <input 
-                type="text" 
-                value={profile.interests} 
-                onChange={e => setProfile({...profile, interests: e.target.value})}
-                placeholder="e.g. Web Development, AI"
-                style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
-              />
-            </div>
-          </div>
-
-          <div style={{ marginBottom: '2rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Bio</label>
-            <textarea 
-              value={profile.bio} 
-              onChange={e => setProfile({...profile, bio: e.target.value})}
-              rows="4"
-              placeholder="Tell mentors about yourself..."
-              style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
-            />
-          </div>
-
-          {message && <div style={{ color: '#10b981', marginBottom: '1rem', fontWeight: 'bold' }}>{message}</div>}
-          {error && <div style={{ color: '#ef4444', marginBottom: '1rem' }}>{error}</div>}
-
-          <button type="submit" className="btn btn-primary" disabled={saving} style={{ padding: '0.75rem 2rem' }}>
-            {saving ? 'Saving...' : 'Save Profile'}
-          </button>
-        </form>
-      </div>
-
-      {isMinor(user?.dateOfBirth) && (
-        <div className="glass-card" style={{ maxWidth: '600px', padding: '2rem', marginTop: '2rem' }}>
-          <h3 style={{ marginBottom: '1rem' }}>Link Guardian</h3>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-            As a minor, you can link a parent or guardian to your account so they can monitor your progress and sessions.
-          </p>
-          <form onSubmit={handleLinkGuardian}>
-            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
-              <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Guardian Email</label>
-                <input 
-                  type="email" 
-                  required
-                  value={guardianEmail} 
-                  onChange={e => setGuardianEmail(e.target.value)}
-                  placeholder="e.g. parent@example.com"
-                  style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label className="form-label">Bio</label>
+                <textarea 
+                  className="form-input"
+                  value={profile.bio} 
+                  onChange={e => setProfile({...profile, bio: e.target.value})}
+                  rows="4"
+                  placeholder="Tell mentors about yourself..."
                 />
               </div>
-              <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Relationship</label>
-                <select 
-                  required
-                  value={relationship}
-                  onChange={e => setRelationship(e.target.value)}
-                  style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
-                >
-                  <option value="">Select...</option>
-                  <option value="Parent">Parent</option>
-                  <option value="Legal Guardian">Legal Guardian</option>
-                  <option value="Other">Other</option>
-                </select>
+
+              {message && <div style={{ padding: '0.75rem', background: 'var(--success-bg)', color: 'var(--success)', borderRadius: 'var(--radius-md)', marginBottom: '1rem' }}>{message}</div>}
+              {error && <div style={{ padding: '0.75rem', background: 'var(--error-bg)', color: 'var(--error)', borderRadius: 'var(--radius-md)', marginBottom: '1rem' }}>{error}</div>}
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <button type="submit" className="btn btn-primary" disabled={saving}>
+                  {saving ? 'Saving...' : 'Save Profile'}
+                </button>
               </div>
+            </form>
+          </div>
+
+          {isMinor(user?.dateOfBirth) && (
+            <div className="glass-card profile-section">
+              <h3>Link Guardian</h3>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+                As a minor, you can link a parent or guardian to your account so they can monitor your progress and sessions.
+              </p>
+              <form onSubmit={handleLinkGuardian}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
+                  <div>
+                    <label className="form-label">Guardian Email</label>
+                    <input 
+                      type="email" 
+                      className="form-input"
+                      required
+                      value={guardianEmail} 
+                      onChange={e => setGuardianEmail(e.target.value)}
+                      placeholder="e.g. parent@example.com"
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label">Relationship</label>
+                    <select 
+                      required
+                      className="form-input"
+                      value={relationship}
+                      onChange={e => setRelationship(e.target.value)}
+                    >
+                      <option value="">Select...</option>
+                      <option value="Parent">Parent</option>
+                      <option value="Legal Guardian">Legal Guardian</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                </div>
+
+                {linkMsg && <div style={{ padding: '0.75rem', background: 'var(--success-bg)', color: 'var(--success)', borderRadius: 'var(--radius-md)', marginBottom: '1rem' }}>{linkMsg}</div>}
+                {linkErr && <div style={{ padding: '0.75rem', background: 'var(--error-bg)', color: 'var(--error)', borderRadius: 'var(--radius-md)', marginBottom: '1rem' }}>{linkErr}</div>}
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <button type="submit" className="btn btn-secondary" disabled={linking}>
+                    {linking ? 'Linking...' : 'Send Link Request'}
+                  </button>
+                </div>
+              </form>
             </div>
-
-            {linkMsg && <div style={{ color: '#10b981', marginBottom: '1rem', fontWeight: 'bold' }}>{linkMsg}</div>}
-            {linkErr && <div style={{ color: '#ef4444', marginBottom: '1rem' }}>{linkErr}</div>}
-
-            <button type="submit" className="btn btn-secondary" disabled={linking} style={{ padding: '0.75rem 2rem' }}>
-              {linking ? 'Linking...' : 'Send Link Request'}
-            </button>
-          </form>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

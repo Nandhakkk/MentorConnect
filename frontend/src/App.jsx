@@ -12,6 +12,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 // Auth pages
 import Login from './pages/Login';
 import Register from './pages/Register';
+// Landing Page
+import Landing from './pages/Landing';
 
 // Dashboards
 import StudentDashboard from './pages/student/StudentDashboard';
@@ -64,22 +66,7 @@ import GuardianDashboard from './pages/guardian/GuardianDashboard';
 // Placeholder pages for upcoming features
 // (None currently required)
 
-// Root redirect → role-specific dashboard
-function RootRedirect() {
-  const { user, loading } = useAuth();
-  if (loading) return null;
-  if (!user) return <Navigate to="/login" replace />;
-  if (user.role === 'STUDENT') {
-    if (user.studentProfile && !user.studentProfile.onboardingCompleted) {
-      return <Navigate to="/student/onboarding" replace />;
-    }
-    return <Navigate to="/student/dashboard" replace />;
-  }
-  if (user.role === 'MENTOR') return <Navigate to="/mentor/dashboard" replace />;
-  if (user.role === 'ADMIN') return <Navigate to="/admin/dashboard" replace />;
-  if (user.role === 'GUARDIAN') return <Navigate to="/guardian/dashboard" replace />;
-  return <Navigate to="/login" replace />;
-}
+
 
 export default function App() {
   return (
@@ -90,8 +77,8 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
-          {/* ─── Root redirect ─── */}
-          <Route path="/" element={<RootRedirect />} />
+          {/* ─── Root Route ─── */}
+          <Route path="/" element={<Landing />} />
 
           {/* ─── STUDENT Routes ─── */}
           <Route
