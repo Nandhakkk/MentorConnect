@@ -1,5 +1,6 @@
 const prisma = require('../config/db');
 const aiService = require('../services/aiService');
+const { isMinor } = require('../utils/ageHelper');
 
 /**
  * Helper to ensure the mentor profile exists
@@ -54,6 +55,11 @@ const createApplication = async (req, res) => {
 
     if (existingApp && ['PENDING', 'AI_SCREENED', 'UNDER_REVIEW', 'APPROVED'].includes(existingApp.status)) {
       return res.status(400).json({ status: 'error', message: 'You already have an active application.' });
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    if (user.dateOfBirth && isMinor(user.dateOfBirth)) {
+      return res.status(400).json({ status: 'error', message: 'You must be at least 18 years old to apply as a professional mentor.' });
     }
 
     const {

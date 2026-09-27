@@ -2,6 +2,18 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchMentorApplicationById, updateMentorApplicationStatus } from '../../services/adminService';
 
+const calculateAge = (dobString) => {
+  if (!dobString) return null;
+  const dob = new Date(dobString);
+  const today = new Date();
+  let age = today.getFullYear() - dob.getFullYear();
+  const m = today.getMonth() - dob.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+    age--;
+  }
+  return age;
+};
+
 export default function AdminMentorApplicationReview() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -77,6 +89,12 @@ export default function AdminMentorApplicationReview() {
               <div><strong>Email:</strong> <span style={{ color: 'white' }}>{app.mentor.user.email}</span></div>
               <div><strong>Phone:</strong> {app.mentor.user.phone || 'N/A'}</div>
               <div><strong>DOB:</strong> {app.mentor.user.dateOfBirth ? new Date(app.mentor.user.dateOfBirth).toLocaleDateString() : 'N/A'}</div>
+              {app.mentor.user.dateOfBirth && (
+                <>
+                  <div><strong>Age:</strong> {calculateAge(app.mentor.user.dateOfBirth)}</div>
+                  <div><strong>Category:</strong> {calculateAge(app.mentor.user.dateOfBirth) < 18 ? 'Minor' : 'Adult'}</div>
+                </>
+              )}
               <div><strong>Languages:</strong> {app.languages || 'N/A'}</div>
               <div><strong>LinkedIn:</strong> {app.linkedinUrl ? <a href={app.linkedinUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--accent-primary)' }}>{app.linkedinUrl}</a> : 'N/A'}</div>
             </div>

@@ -15,6 +15,18 @@ const isMinor = (dobString) => {
   return age < 18;
 };
 
+const calculateAge = (dobString) => {
+  if (!dobString) return null;
+  const dob = new Date(dobString);
+  const today = new Date();
+  let age = today.getFullYear() - dob.getFullYear();
+  const m = today.getMonth() - dob.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+    age--;
+  }
+  return age;
+};
+
 export default function StudentProfileForm() {
   const { user } = useAuth();
   const [profile, setProfile] = useState({
@@ -115,6 +127,28 @@ export default function StudentProfileForm() {
                 <span className="info-label">Email</span>
                 <span className="info-value" style={{ wordBreak: 'break-all' }}>{user?.email}</span>
               </div>
+              {user?.dateOfBirth && (
+                <>
+                  <div className="info-item" style={{ marginBottom: '0.75rem' }}>
+                    <span className="info-label">Date of Birth</span>
+                    <span className="info-value">{new Date(user.dateOfBirth).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                  </div>
+                  <div className="info-item" style={{ marginBottom: '0.75rem' }}>
+                    <span className="info-label">Age</span>
+                    <span className="info-value">{calculateAge(user.dateOfBirth)} years</span>
+                  </div>
+                  <div className="info-item" style={{ marginBottom: '0.75rem' }}>
+                    <span className="info-label">Status</span>
+                    <span className="info-value">
+                      {isMinor(user.dateOfBirth) ? (
+                        <span className="badge badge-warning">Minor</span>
+                      ) : (
+                        <span className="badge badge-success">Adult</span>
+                      )}
+                    </span>
+                  </div>
+                </>
+              )}
               <div className="info-item">
                 <span className="info-label">Role</span>
                 <span className="info-value">Student</span>

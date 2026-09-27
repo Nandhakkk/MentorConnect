@@ -1,5 +1,16 @@
 const MINOR_AGE_THRESHOLD = 18;
 
+const calculateAge = (dateOfBirth) => {
+  if (!dateOfBirth) return null;
+  const today = new Date();
+  let age = today.getFullYear() - dateOfBirth.getFullYear();
+  const m = today.getMonth() - dateOfBirth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < dateOfBirth.getDate())) {
+    age--;
+  }
+  return age;
+};
+
 /**
  * Calculates whether a given date of birth makes the user a minor.
  * Considers whether the birthday has occurred this year.
@@ -37,6 +48,7 @@ const validateDateOfBirth = (dateString) => {
 };
 
 module.exports = {
+  calculateAge,
   isMinor,
   validateDateOfBirth,
   MINOR_AGE_THRESHOLD

@@ -61,6 +61,8 @@ const getUsers = async (req, res) => {
     let whereClause = {};
     if (role && role !== 'ALL') {
       whereClause.role = role;
+    } else {
+      whereClause.role = { not: 'ADMIN' };
     }
     
     if (search) {

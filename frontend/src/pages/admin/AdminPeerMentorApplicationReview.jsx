@@ -2,6 +2,18 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchPeerMentorApplicationById, updatePeerMentorApplicationStatus } from '../../services/adminService';
 
+const calculateAge = (dobString) => {
+  if (!dobString) return null;
+  const dob = new Date(dobString);
+  const today = new Date();
+  let age = today.getFullYear() - dob.getFullYear();
+  const m = today.getMonth() - dob.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+    age--;
+  }
+  return age;
+};
+
 export default function AdminPeerMentorApplicationReview() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -101,6 +113,13 @@ export default function AdminPeerMentorApplicationReview() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
             <div><strong style={{ color: 'var(--text-primary)' }}>Name:</strong> {user?.name || 'N/A'}</div>
             <div><strong style={{ color: 'var(--text-primary)' }}>Email:</strong> {user?.email || 'N/A'}</div>
+            {user?.dateOfBirth && (
+              <>
+                <div><strong style={{ color: 'var(--text-primary)' }}>DOB:</strong> {new Date(user.dateOfBirth).toLocaleDateString()}</div>
+                <div><strong style={{ color: 'var(--text-primary)' }}>Age:</strong> {calculateAge(user.dateOfBirth)}</div>
+                <div><strong style={{ color: 'var(--text-primary)' }}>Category:</strong> {calculateAge(user.dateOfBirth) < 18 ? 'Minor' : 'Adult'}</div>
+              </>
+            )}
             <div><strong style={{ color: 'var(--text-primary)' }}>Role:</strong> {user?.role || 'N/A'}</div>
             <div><strong style={{ color: 'var(--text-primary)' }}>Account Active:</strong> {user?.isActive ? 'Yes' : 'No'}</div>
             <div><strong style={{ color: 'var(--text-primary)' }}>Suspended:</strong> {user?.isSuspended ? 'Yes' : 'No'}</div>
