@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getMyApplication, createApplication, updateMyApplication, screenApplication } from '../../services/mentorApplicationService';
+import { getMyApplication, createApplication, updateMyApplication, screenApplication, uploadCredential, deleteCredential } from '../../services/mentorApplicationService';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -17,6 +17,15 @@ export default function MentorApplication() {
     languages: '',
     proposedSessionFee: ''
   });
+
+  const [credData, setCredData] = useState({
+    type: 'CERTIFICATE',
+    title: '',
+    description: '',
+    issuingOrganization: '',
+    file: null
+  });
+  const [uploadingCred, setUploadingCred] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -94,6 +103,55 @@ export default function MentorApplication() {
       setError(err.message);
     } finally {
       setScreening(false);
+    }
+  };
+
+  const handleCredentialUpload = async (e) => {
+    e.preventDefault();
+    if (!credData.file) {
+      setError('Please select a file.');
+      return;
+    }
+    try {
+      setUploadingCred(true);
+      setError('');
+      setSuccess('');
+      const form = new FormData();
+      form.append('type', credData.type);
+      form.append('title', credData.title);
+      if (credData.description) form.append('description', credData.description);
+      if (credData.issuingOrganization) form.append('issuingOrganization', credData.issuingOrganization);
+      form.append('file', credData.file);
+
+      const newCred = await uploadCredential(form, token);
+      setApplication(prev => ({
+        ...prev,
+        credentials: [...(prev.credentials || []), newCred]
+      }));
+      setSuccess('Credential uploaded successfully.');
+      setCredData({ type: 'CERTIFICATE', title: '', description: '', issuingOrganization: '', file: null });
+      // clear file input
+      document.getElementById('cred-file-input').value = '';
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setUploadingCred(false);
+    }
+  };
+
+  const handleDeleteCredential = async (credId) => {
+    if (!window.confirm('Delete this credential?')) return;
+    try {
+      setError('');
+      setSuccess('');
+      await deleteCredential(credId, token);
+      setApplication(prev => ({
+        ...prev,
+        credentials: (prev.credentials || []).filter(c => c.id !== credId)
+      }));
+      setSuccess('Credential deleted.');
+    } catch (err) {
+      setError(err.message);
     }
   };
 
@@ -305,21 +363,99 @@ export default function MentorApplication() {
             />
           </div>
 
-          {/* Credentials / Certificates Placeholder */}
-          <div style={{ marginBottom: '2rem', padding: '1.5rem', border: '1px dashed var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
+          {/* Credentials / Certificates */}
+          <div style={{ marginBottom: '2rem', padding: '1.5rem', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
             <h4 style={{ marginBottom: '0.5rem' }}>Certificates & Evidence</h4>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1rem' }}>
-              Upload your degrees, certificates, or evidence of experience. (Document upload functionality will be implemented in a later phase).
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+              Upload your degrees, certificates, or evidence of experience.
             </p>
-            <button type="button" className="btn btn-secondary" disabled>
-              Upload Document (Coming Soon)
-            </button>
+            
             {application && application.credentials && application.credentials.length > 0 && (
-              <ul style={{ marginTop: '1rem', paddingLeft: '1.2rem', color: 'var(--text-primary)' }}>
-                {application.credentials.map(cred => (
-                  <li key={cred.id}>{cred.title} - {cred.status}</li>
-                ))}
-              </ul>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h5 style={{ marginBottom: '0.5rem' }}>Uploaded Evidence</h5>
+                <ul style={{ paddingLeft: '0', listStyle: 'none' }}>
+                  {application.credentials.map(cred => (
+                    <li key={cred.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: 'rgba(0,0,0,0.2)', marginBottom: '0.5rem', borderRadius: '4px' }}>
+                      <div>
+                        <strong>{cred.title}</strong> <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>({cred.type})</span>
+                        <div style={{ fontSize: '0.85rem', marginTop: '0.25rem' }}>Status: <span className={`badge badge-${cred.status === 'VERIFIED' ? 'success' : cred.status === 'REJECTED' ? 'error' : 'warning'}`}>{cred.status}</span></div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        {cred.fileReference && (
+                          <a href={cred.fileReference} target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.85rem' }}>
+                            View
+                          </a>
+                        )}
+                        {!isReadOnly && (
+                          <button type="button" onClick={() => handleDeleteCredential(cred.id)} className="btn" style={{ background: 'var(--error-bg)', color: 'var(--error)', padding: '0.25rem 0.5rem', fontSize: '0.85rem' }}>
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {!isReadOnly && application && (
+              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: 'var(--radius-md)' }}>
+                <h5 style={{ marginBottom: '1rem' }}>Add New Credential</h5>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                  <div>
+                    <label className="form-label">Title</label>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      value={credData.title}
+                      onChange={e => setCredData({...credData, title: e.target.value})}
+                      placeholder="e.g. AWS Certified Solutions Architect"
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label">Type</label>
+                    <select 
+                      className="form-input"
+                      value={credData.type}
+                      onChange={e => setCredData({...credData, type: e.target.value})}
+                    >
+                      <option value="CERTIFICATE">Certificate</option>
+                      <option value="DEGREE">Degree</option>
+                      <option value="EXPERIENCE">Experience Evidence</option>
+                      <option value="OTHER">Other</option>
+                    </select>
+                  </div>
+                </div>
+                <div style={{ marginBottom: '1rem' }}>
+                  <label className="form-label">Issuing Organization</label>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    value={credData.issuingOrganization}
+                    onChange={e => setCredData({...credData, issuingOrganization: e.target.value})}
+                    placeholder="e.g. Amazon Web Services"
+                  />
+                </div>
+                <div style={{ marginBottom: '1rem' }}>
+                  <label className="form-label">File (PDF/Image)</label>
+                  <input 
+                    type="file" 
+                    id="cred-file-input"
+                    className="form-input" 
+                    onChange={e => setCredData({...credData, file: e.target.files[0]})}
+                    accept=".pdf,.jpg,.jpeg,.png"
+                  />
+                </div>
+                <button type="button" onClick={handleCredentialUpload} disabled={uploadingCred || !credData.title || !credData.file} className="btn btn-secondary">
+                  {uploadingCred ? 'Uploading...' : 'Upload Credential'}
+                </button>
+              </div>
+            )}
+            
+            {!application && (
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                Please save your application first before uploading credentials.
+              </div>
             )}
           </div>
 

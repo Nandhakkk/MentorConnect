@@ -32,12 +32,38 @@ export default function MentorAvailability() {
 
   const handleAddSlot = async (e) => {
     e.preventDefault();
+    if (newSlot.startTime >= newSlot.endTime) {
+      setError('Start time must be earlier than end time.');
+      return;
+    }
+
+    const timeToMinutes = (t) => {
+      const [h, m] = t.split(':').map(Number);
+      return h * 60 + m;
+    };
+
+    const newStart = timeToMinutes(newSlot.startTime);
+    const newEnd = timeToMinutes(newSlot.endTime);
+
+    const overlap = availabilities.some(slot => {
+      if (slot.dayOfWeek !== newSlot.dayOfWeek) return false;
+      const sStart = timeToMinutes(slot.startTime);
+      const sEnd = timeToMinutes(slot.endTime);
+      return newStart < sEnd && newEnd > sStart;
+    });
+
+    if (overlap) {
+      setError('This slot overlaps with an existing availability on the same day.');
+      return;
+    }
+
     try {
+      setError('');
       await addMentorAvailability(newSlot);
       setNewSlot({ dayOfWeek: 'MONDAY', startTime: '09:00', endTime: '17:00' });
       await loadAvailability();
     } catch (err) {
-      alert(err.message);
+      setError(err.message);
     }
   };
 

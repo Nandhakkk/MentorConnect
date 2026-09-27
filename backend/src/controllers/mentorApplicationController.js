@@ -1,5 +1,6 @@
 const prisma = require('../config/db');
 const aiService = require('../services/aiService');
+const fileService = require('../services/fileService');
 const { isMinor } = require('../utils/ageHelper');
 
 /**
@@ -235,9 +236,119 @@ const screenApplication = async (req, res) => {
   }
 };
 
+/**
+ * POST /api/mentor-applications/me/credentials
+ * Upload a credential file for the current application.
+ */
+const uploadCredential = async (req, res) => {
+  try {
+    const mentorId = await getMentorProfileId(req.user.id);
+    
+    const application = await prisma.mentorApplication.findFirst({
+      where: { mentorId },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    if (!application) {
+      return res.status(404).json({ status: 'error', message: 'No application found.' });
+    }
+
+    if (application.status !== 'PENDING') {
+      return res.status(400).json({ status: 'error', message: `Cannot modify credentials when application is in ${application.status} status.` });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ status: 'error', message: 'No file provided.' });
+    }
+
+    const { type, title, description, issuingOrganization } = req.body;
+    
+    if (!type || !title) {
+      return res.status(400).json({ status: 'error', message: 'Type and title are required.' });
+    }
+
+    // Create the credential record first
+    const credential = await prisma.credential.create({
+      data: {
+        mentorId,
+        applicationId: application.id,
+        type,
+        title,
+        description,
+        issuingOrganization,
+        status: 'PENDING'
+      }
+    });
+
+    // Upload to Cloudinary and create FileAsset
+    const assets = await fileService.processUploads(
+      [req.file], 
+      req.user.id, 
+      'mentorconnect/credentials', 
+      'CREDENTIAL', 
+      credential.id
+    );
+
+    const secureUrl = fileService.generateSecureUrl(assets[0].storageKey);
+
+    // Update credential with the URL
+    const updatedCredential = await prisma.credential.update({
+      where: { id: credential.id },
+      data: { fileReference: secureUrl }
+    });
+
+    return res.status(201).json({ status: 'success', message: 'Credential uploaded.', credential: updatedCredential });
+  } catch (err) {
+    return res.status(500).json({ status: 'error', message: 'Failed to upload credential.', details: err.message });
+  }
+};
+
+/**
+ * DELETE /api/mentor-applications/me/credentials/:credentialId
+ */
+const deleteCredential = async (req, res) => {
+  try {
+    const mentorId = await getMentorProfileId(req.user.id);
+    const { credentialId } = req.params;
+
+    const credential = await prisma.credential.findUnique({
+      where: { id: credentialId },
+      include: { application: true }
+    });
+
+    if (!credential) {
+      return res.status(404).json({ status: 'error', message: 'Credential not found.' });
+    }
+
+    if (credential.mentorId !== mentorId) {
+      return res.status(403).json({ status: 'error', message: 'Unauthorized.' });
+    }
+
+    if (credential.application && credential.application.status !== 'PENDING') {
+      return res.status(400).json({ status: 'error', message: `Cannot delete credentials when application is in ${credential.application.status} status.` });
+    }
+
+    // Delete associated FileAssets
+    const assets = await fileService.getFilesForEntity('CREDENTIAL', credential.id);
+    for (const asset of assets) {
+      await fileService.deleteFileAsset(asset.id, req.user.id);
+    }
+
+    await prisma.credential.delete({
+      where: { id: credentialId }
+    });
+
+    return res.status(200).json({ status: 'success', message: 'Credential deleted.' });
+  } catch (err) {
+    return res.status(500).json({ status: 'error', message: 'Failed to delete credential.', details: err.message });
+  }
+};
+
 module.exports = {
   getMyApplication,
   createApplication,
   updateMyApplication,
-  screenApplication
+  screenApplication,
+  uploadCredential,
+  deleteCredential
 };

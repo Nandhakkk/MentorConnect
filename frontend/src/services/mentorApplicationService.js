@@ -49,3 +49,28 @@ export async function screenApplication(token) {
   if (!response.ok) throw new Error(data.message || 'Failed to run AI screening.');
   return data.screeningResult;
 }
+
+export async function uploadCredential(formData, token) {
+  const response = await fetch(`${API_BASE_URL}/mentor-applications/me/credentials`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`
+    },
+    body: formData // sending FormData directly, do not stringify
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to upload credential.');
+  return data.credential;
+}
+
+export async function deleteCredential(credentialId, token) {
+  const response = await fetch(`${API_BASE_URL}/mentor-applications/me/credentials/${credentialId}`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to delete credential.');
+  return data;
+}

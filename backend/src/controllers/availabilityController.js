@@ -1,6 +1,33 @@
 const prisma = require('../config/db');
 const { isApprovedMentor } = require('../utils/mentorCapability');
 
+const DAYS_OF_WEEK = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
+
+const isValidTime = (time) => /^([01]\d|2[0-3]):([0-5]\d)$/.test(time);
+
+const timeToMinutes = (time) => {
+  const [h, m] = time.split(':').map(Number);
+  return h * 60 + m;
+};
+
+const checkOverlap = (existingSlots, newStart, newEnd, excludeId = null) => {
+  const newStartMin = timeToMinutes(newStart);
+  const newEndMin = timeToMinutes(newEnd);
+  
+  for (const slot of existingSlots) {
+    if (excludeId && slot.id === excludeId) continue;
+    
+    const slotStartMin = timeToMinutes(slot.startTime);
+    const slotEndMin = timeToMinutes(slot.endTime);
+    
+    // Check overlap: (StartA < EndB) and (EndA > StartB)
+    if (newStartMin < slotEndMin && newEndMin > slotStartMin) {
+      return true;
+    }
+  }
+  return false;
+};
+
 /**
  * GET /api/availability
  * Get all availability slots for the authenticated mentor.
@@ -36,10 +63,32 @@ const createAvailability = async (req, res) => {
       return res.status(403).json({ status: 'error', message: 'Mentor profile not found.' });
     }
 
-    const { dayOfWeek, startTime, endTime } = req.body;
+    const dayOfWeek = req.body.dayOfWeek?.toUpperCase();
+    const { startTime, endTime } = req.body;
 
     if (!dayOfWeek || !startTime || !endTime) {
       return res.status(400).json({ status: 'error', message: 'Missing required fields.' });
+    }
+
+    if (!DAYS_OF_WEEK.includes(dayOfWeek)) {
+      return res.status(400).json({ status: 'error', message: 'Invalid day of week.' });
+    }
+
+    if (!isValidTime(startTime) || !isValidTime(endTime)) {
+      return res.status(400).json({ status: 'error', message: 'Invalid time format. Use HH:mm (24-hour).' });
+    }
+
+    if (timeToMinutes(startTime) >= timeToMinutes(endTime)) {
+      return res.status(400).json({ status: 'error', message: 'Start time must be earlier than end time.' });
+    }
+
+    // Check overlaps
+    const existingSlots = await prisma.mentorAvailability.findMany({
+      where: { mentorId: mentorProfile.id, dayOfWeek }
+    });
+
+    if (checkOverlap(existingSlots, startTime, endTime)) {
+      return res.status(400).json({ status: 'error', message: 'Slot overlaps with existing availability on this day.' });
     }
 
     const availability = await prisma.mentorAvailability.create({
@@ -77,6 +126,31 @@ const updateAvailability = async (req, res) => {
 
     if (!existing) {
       return res.status(404).json({ status: 'error', message: 'Availability slot not found or unauthorized.' });
+    }
+
+    const newDay = dayOfWeek !== undefined ? dayOfWeek.toUpperCase() : existing.dayOfWeek;
+    const newStart = startTime !== undefined ? startTime : existing.startTime;
+    const newEnd = endTime !== undefined ? endTime : existing.endTime;
+
+    if (!DAYS_OF_WEEK.includes(newDay)) {
+      return res.status(400).json({ status: 'error', message: 'Invalid day of week.' });
+    }
+
+    if (!isValidTime(newStart) || !isValidTime(newEnd)) {
+      return res.status(400).json({ status: 'error', message: 'Invalid time format. Use HH:mm (24-hour).' });
+    }
+
+    if (timeToMinutes(newStart) >= timeToMinutes(newEnd)) {
+      return res.status(400).json({ status: 'error', message: 'Start time must be earlier than end time.' });
+    }
+
+    // Check overlaps
+    const existingSlots = await prisma.mentorAvailability.findMany({
+      where: { mentorId: mentorProfile.id, dayOfWeek: newDay }
+    });
+
+    if (checkOverlap(existingSlots, newStart, newEnd, id)) {
+      return res.status(400).json({ status: 'error', message: 'Slot overlaps with existing availability on this day.' });
     }
 
     const availability = await prisma.mentorAvailability.update({

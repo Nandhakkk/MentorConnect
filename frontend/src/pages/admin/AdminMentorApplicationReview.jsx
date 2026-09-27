@@ -125,13 +125,35 @@ export default function AdminMentorApplicationReview() {
           <div className="glass-card" style={{ padding: '1.5rem' }}>
             <h3 style={{ fontSize: '1.25rem', marginBottom: '1rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.5rem' }}>Credentials & Evidence</h3>
             {app.credentials && app.credentials.length > 0 ? (
-              <ul style={{ paddingLeft: '1.2rem', color: 'var(--text-primary)' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 {app.credentials.map(c => (
-                  <li key={c.id} style={{ marginBottom: '0.5rem' }}>
-                    <strong>{c.title}</strong> ({c.type}) - <span className="badge badge-warning">{c.status}</span>
-                  </li>
+                  <div key={c.id} style={{ padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: '4px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div>
+                        <strong>{c.title}</strong> <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>({c.type})</span>
+                        <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', color: 'var(--text-secondary)' }}>
+                          Uploaded: {new Date(c.uploadedAt).toLocaleDateString()}
+                        </div>
+                        {c.issuingOrganization && (
+                          <div style={{ fontSize: '0.85rem', marginTop: '0.25rem', color: 'var(--text-secondary)' }}>
+                            Issuer: {c.issuingOrganization}
+                          </div>
+                        )}
+                        <div style={{ marginTop: '0.5rem' }}>
+                          Status: <span className={`badge badge-${c.status === 'VERIFIED' ? 'success' : c.status === 'REJECTED' ? 'error' : 'warning'}`}>{c.status}</span>
+                        </div>
+                      </div>
+                      <div>
+                        {c.fileReference && (
+                          <a href={c.fileReference} target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ padding: '0.25rem 0.75rem', fontSize: '0.85rem' }}>
+                            View Document
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 ))}
-              </ul>
+              </div>
             ) : (
               <p style={{ color: 'var(--text-muted)' }}>No credentials uploaded.</p>
             )}
