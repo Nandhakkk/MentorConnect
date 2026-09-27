@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { fetchSessions, bookSession, cancelSession } from '../../services/sessionService';
 import { fetchStudentMentorships } from '../../services/mentorService';
 import DashboardCard from '../../components/DashboardCard';
+import SessionCountdown from '../../components/SessionCountdown';
 
 export default function StudentSessions() {
   const [sessions, setSessions] = useState([]);
@@ -184,19 +185,29 @@ export default function StudentSessions() {
                   </div>
                 </div>
                 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end' }}>
-                  {new Date() >= new Date(new Date(session.scheduledAt).getTime() - 10 * 60000) ? (
-                    <Link to={`/student/sessions/${session.id}/live`} className="btn btn-primary" style={{ padding: '0.5rem 1rem', textDecoration: 'none', textAlign: 'center' }}>
-                      Join Session
-                    </Link>
-                  ) : (
-                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                      Available 10 mins before
-                    </span>
-                  )}
-                  <button onClick={() => handleCancelSession(session.id)} style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', padding: '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer' }}>
-                    Cancel
-                  </button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'flex-end', minWidth: '200px' }}>
+                  <div style={{ width: '100%' }}>
+                    <SessionCountdown 
+                      scheduledAt={session.scheduledAt} 
+                      duration={session.duration} 
+                      status={session.status} 
+                    />
+                  </div>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '100%' }}>
+                    {new Date() >= new Date(new Date(session.scheduledAt).getTime() - 10 * 60000) ? (
+                      <Link to={`/student/sessions/${session.id}/live`} className="btn btn-primary" style={{ padding: '0.5rem', textDecoration: 'none', textAlign: 'center', width: '100%' }}>
+                        Join Session
+                      </Link>
+                    ) : (
+                      <button className="btn btn-secondary" disabled style={{ width: '100%', opacity: 0.5 }}>
+                        Join (opens 10m before)
+                      </button>
+                    )}
+                    <button onClick={() => handleCancelSession(session.id)} style={{ width: '100%', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', padding: '0.5rem', borderRadius: '4px', cursor: 'pointer' }}>
+                      Cancel
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}

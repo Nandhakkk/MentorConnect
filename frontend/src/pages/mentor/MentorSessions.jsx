@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchSessions, cancelSession, completeSession } from '../../services/sessionService';
+import SessionCountdown from '../../components/SessionCountdown';
 
 export default function MentorSessions() {
   const [sessions, setSessions] = useState([]);
@@ -80,23 +81,31 @@ export default function MentorSessions() {
                   </div>
                 </div>
                 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end' }}>
-                  {new Date() >= new Date(new Date(session.scheduledAt).getTime() - 10 * 60000) ? (
-                    <Link to={`/mentor/sessions/${session.id}/live`} className="btn btn-primary" style={{ padding: '0.5rem 1rem', textDecoration: 'none', textAlign: 'center', minWidth: '130px' }}>
-                      Join Session
-                    </Link>
-                  ) : (
-                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                      Available 10 mins before
-                    </span>
-                  )}
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button onClick={() => handleCompleteSession(session.id)} style={{ background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)', padding: '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer' }}>
-                      Mark Complete
-                    </button>
-                    <button onClick={() => handleCancelSession(session.id)} style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', padding: '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer' }}>
-                      Cancel
-                    </button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'flex-end' }}>
+                  <SessionCountdown 
+                    scheduledAt={session.scheduledAt} 
+                    duration={session.duration} 
+                    status={session.status} 
+                  />
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end', width: '100%' }}>
+                    {new Date() >= new Date(new Date(session.scheduledAt).getTime() - 10 * 60000) ? (
+                      <Link to={`/mentor/sessions/${session.id}/live`} className="btn btn-primary" style={{ padding: '0.5rem 1rem', textDecoration: 'none', textAlign: 'center', width: '100%' }}>
+                        Join Session
+                      </Link>
+                    ) : (
+                      <button className="btn btn-secondary" disabled style={{ width: '100%', opacity: 0.5 }}>
+                        Join (opens 10m before)
+                      </button>
+                    )}
+                    <div style={{ display: 'flex', gap: '0.5rem', width: '100%' }}>
+                      <button onClick={() => handleCompleteSession(session.id)} style={{ flex: 1, background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)', padding: '0.5rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem' }}>
+                        Mark Complete
+                      </button>
+                      <button onClick={() => handleCancelSession(session.id)} style={{ flex: 1, background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', padding: '0.5rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem' }}>
+                        Cancel
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
