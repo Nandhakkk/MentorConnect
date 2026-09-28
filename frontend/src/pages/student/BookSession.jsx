@@ -66,7 +66,7 @@ export default function BookSession() {
       setBookingLoading(true);
       const scheduledAt = new Date(`${selectedDate}T${selectedTime}:00`).toISOString();
       
-      const { session } = await bookSession({
+      const session = await bookSession({
         mentorshipId: id,
         topic: selectedTopic,
         scheduledAt,
