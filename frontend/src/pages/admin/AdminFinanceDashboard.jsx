@@ -95,8 +95,8 @@ export default function AdminFinanceDashboard() {
       )}
 
       <h3 style={{ marginBottom: '1rem', color: 'var(--text-primary)' }}>Payout Ledger</h3>
-      <div className="table-responsive glass-card" style={{ padding: '1px' }}>
-        <table className="admin-table">
+      <div className="table-responsive glass-card" style={{ padding: '1px', overflowX: 'auto', width: '100%' }}>
+        <table className="admin-table" style={{ minWidth: '900px' }}>
           <thead>
             <tr>
               <th>Date</th>

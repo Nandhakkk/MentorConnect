@@ -106,6 +106,13 @@ const createSession = async (req, res) => {
       return res.status(400).json({ status: 'error', message: 'Invalid scheduledAt date format.' });
     }
 
+    const nowKolkataDateStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+    const scheduledDateStr = scheduledDate.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+    
+    if (scheduledDateStr < nowKolkataDateStr) {
+      return res.status(400).json({ status: 'error', message: 'Cannot book a session on a past date.' });
+    }
+
     // 1 & 2 & 3. Verify mentorship ownership and active status
     const mentorship = await prisma.mentorship.findFirst({
       where: {

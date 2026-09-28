@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
-import { fetchMyMentorProfile, addMentorAvailability, removeMentorAvailability } from '../../services/mentorService';
+import { fetchMyMentorProfile, updateMyMentorProfile, addMentorAvailability, removeMentorAvailability } from '../../services/mentorService';
 
 const DAYS_OF_WEEK = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
 
 export default function MentorAvailability() {
   const [availabilities, setAvailabilities] = useState([]);
+  const [isAvailable, setIsAvailable] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [toggleLoading, setToggleLoading] = useState(false);
 
   const [newSlot, setNewSlot] = useState({
     dayOfWeek: 'MONDAY',
@@ -19,6 +21,7 @@ export default function MentorAvailability() {
       setLoading(true);
       const data = await fetchMyMentorProfile();
       setAvailabilities(data.profile.availabilities || []);
+      setIsAvailable(data.profile.isAvailable);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -29,6 +32,19 @@ export default function MentorAvailability() {
   useEffect(() => {
     loadAvailability();
   }, []);
+
+  const handleToggleAvailability = async () => {
+    try {
+      setToggleLoading(true);
+      const newStatus = !isAvailable;
+      await updateMyMentorProfile({ isAvailable: newStatus });
+      setIsAvailable(newStatus);
+    } catch (err) {
+      setError(err.message || 'Failed to update availability status.');
+    } finally {
+      setToggleLoading(false);
+    }
+  };
 
   const handleAddSlot = async (e) => {
     e.preventDefault();
@@ -86,6 +102,23 @@ export default function MentorAvailability() {
           <h2 className="page-title">Manage Availability</h2>
           <p className="page-subtitle">Set the days and times you are available for mentoring sessions.</p>
         </div>
+      </div>
+
+      <div style={{ marginBottom: '2rem', padding: '1.5rem', background: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h3 style={{ margin: '0 0 0.25rem 0' }}>Accepting New Sessions</h3>
+          <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+            {isAvailable ? 'You are visible to students and accepting new bookings.' : 'You are currently not accepting new bookings. Existing sessions remain.'}
+          </p>
+        </div>
+        <button 
+          onClick={handleToggleAvailability} 
+          disabled={toggleLoading}
+          className={`btn ${isAvailable ? 'btn-danger' : 'btn-primary'}`}
+          style={{ minWidth: '120px' }}
+        >
+          {toggleLoading ? 'Saving...' : isAvailable ? 'TURN OFF' : 'TURN ON'}
+        </button>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '2rem', alignItems: 'start' }}>

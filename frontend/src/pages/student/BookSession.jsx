@@ -5,6 +5,7 @@ import PageHeader from '../../components/PageHeader';
 import { bookSession } from '../../services/sessionService';
 import { createPaymentOrder, verifyPayment } from '../../services/paymentService';
 import { useAuth } from '../../context/AuthContext';
+import { getAgeCategory } from '../../utils/ageHelper';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 const getAuthHeaders = () => {
@@ -180,7 +181,7 @@ export default function BookSession() {
                   type="date" 
                   value={selectedDate} 
                   onChange={e => setSelectedDate(e.target.value)}
-                  min={new Date().toISOString().split('T')[0]}
+                  min={new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' })}
                   style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-subtle)', color: 'white' }}
                   required
                 />
@@ -213,7 +214,18 @@ export default function BookSession() {
 
             {bookingError && <div style={{ color: '#ef4444', marginBottom: '1rem', padding: '0.75rem', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '4px' }}>{bookingError}</div>}
 
-            <button type="submit" disabled={bookingLoading} className="btn btn-primary" style={{ width: '100%', padding: '1rem', fontSize: '1.1rem' }}>
+            {user?.dateOfBirth && getAgeCategory(user.dateOfBirth) !== 'ADULT' && (
+              <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'rgba(245, 158, 11, 0.1)', borderLeft: '4px solid #f59e0b', borderRadius: '4px' }}>
+                <h4 style={{ margin: '0 0 0.5rem 0', color: '#f59e0b' }}>Safety Reminder for Minors</h4>
+                <p style={{ margin: 0, color: 'var(--text-secondary)' }}>
+                  {getAgeCategory(user.dateOfBirth) === 'YOUNGER_MINOR' 
+                    ? "Please ensure a parent or guardian is aware of this session booking. Do not share any personal or contact information with your mentor. All payments must be authorized by an adult."
+                    : "Please remember not to share personal contact info (like your phone number or home address) during your sessions. If you ever feel uncomfortable, you can report the issue immediately."}
+                </p>
+              </div>
+            )}
+
+            <button type="submit" disabled={bookingLoading} className="btn btn-primary" style={{ width: '100%', padding: '1rem', fontSize: '1.1rem', marginTop: '1rem' }}>
               {bookingLoading ? 'Processing...' : 'Continue to Payment'}
             </button>
           </form>

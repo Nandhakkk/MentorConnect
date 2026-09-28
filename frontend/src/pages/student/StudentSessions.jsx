@@ -52,25 +52,7 @@ export default function StudentSessions() {
   };
 
   const handleBookSession = async (e) => {
-    e.preventDefault();
-    try {
-      setBookingError('');
-      setBookingSuccess('');
-      const combinedDateTime = new Date(`${bookingData.scheduledAtDate}T${bookingData.scheduledAtTime}`);
-      await bookSession({
-        mentorshipId: bookingData.mentorshipId,
-        scheduledAt: combinedDateTime.toISOString(),
-        duration: bookingData.duration
-      });
-      setBookingSuccess('Session booked successfully!');
-      setTimeout(() => {
-        setShowBookingModal(false);
-        setBookingSuccess('');
-        loadData();
-      }, 1500);
-    } catch (err) {
-      setBookingError(err.message);
-    }
+    // This function is no longer used for booking directly
   };
 
   if (loading) return <div className="page-content">Loading sessions...</div>;
@@ -99,8 +81,11 @@ export default function StudentSessions() {
             {mentorships.length === 0 ? (
               <p style={{ color: 'var(--text-secondary)' }}>You don't have any active mentorships to book a session with.</p>
             ) : (
-              <form onSubmit={handleBookSession}>
-                <div style={{ marginBottom: '1rem' }}>
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                window.location.href = `/student/mentorships/${bookingData.mentorshipId}/book`;
+              }}>
+                <div style={{ marginBottom: '1.5rem' }}>
                   <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Select Mentor</label>
                   <select 
                     value={bookingData.mentorshipId} 
@@ -113,48 +98,9 @@ export default function StudentSessions() {
                     ))}
                   </select>
                 </div>
-                <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
-                  <div style={{ flex: 1 }}>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Date</label>
-                    <input 
-                      type="date" 
-                      value={bookingData.scheduledAtDate} 
-                      onChange={e => setBookingData({...bookingData, scheduledAtDate: e.target.value})}
-                      required
-                      style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
-                    />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Time</label>
-                    <input 
-                      type="time" 
-                      value={bookingData.scheduledAtTime} 
-                      onChange={e => setBookingData({...bookingData, scheduledAtTime: e.target.value})}
-                      required
-                      style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
-                    />
-                  </div>
-                </div>
-                <div style={{ marginBottom: '1.5rem' }}>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Duration (minutes)</label>
-                  <select 
-                    value={bookingData.duration} 
-                    onChange={e => setBookingData({...bookingData, duration: e.target.value})}
-                    required
-                    style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
-                  >
-                    <option value="30">30 minutes</option>
-                    <option value="45">45 minutes</option>
-                    <option value="60">1 hour</option>
-                    <option value="90">1.5 hours</option>
-                  </select>
-                </div>
                 
-                {bookingError && <div style={{ color: '#ef4444', marginBottom: '1rem' }}>{bookingError}</div>}
-                {bookingSuccess && <div style={{ color: '#10b981', marginBottom: '1rem', fontWeight: 'bold' }}>{bookingSuccess}</div>}
-
                 <div style={{ display: 'flex', gap: '1rem' }}>
-                  <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>Book Now</button>
+                  <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>Continue</button>
                   <button type="button" onClick={() => setShowBookingModal(false)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', padding: '0.75rem', borderRadius: '4px', cursor: 'pointer' }}>Cancel</button>
                 </div>
               </form>

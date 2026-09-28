@@ -85,8 +85,13 @@ export default function StudentAIAssistant() {
   const handleKeyDown = (event) => { if (event.key === 'Enter' && event.ctrlKey) submit(event); };
 
   return <div className="page-content ai-workspace">
-    <PageHeader title="MentorConnect AI" subtitle="Your personal AI learning and mentoring assistant" />
-    <p className="ai-intro">Ask for focused, practical guidance grounded in your goals and milestones. Your conversation stays in this browser session.</p>
+    <div className="ai-header" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem 0 1.5rem', borderBottom: '1px solid var(--border-subtle)', marginBottom: '1.5rem' }}>
+      <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'linear-gradient(135deg, #4f46e5, #a855f7)', display: 'grid', placeItems: 'center', color: '#fff', fontSize: '1.5rem' }}>✨</div>
+      <div>
+        <h1 style={{ margin: 0, fontSize: '1.5rem', color: 'var(--text-primary)' }}>MentorConnect AI</h1>
+        <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Your personal AI learning and mentoring assistant</p>
+      </div>
+    </div>
     <div className="ai-layout">
       <aside className="ai-sidebar">
         <section className="glass-card ai-goal-card">

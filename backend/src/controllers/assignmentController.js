@@ -426,7 +426,7 @@ const downloadFile = async (req, res) => {
       return res.status(403).json({ status: 'error', message: 'Invalid file category access' });
     }
 
-    const secureUrl = fileService.generateSecureUrl(fileAsset.storageKey);
+    const secureUrl = fileService.generateSecureUrl(fileAsset.storageKey, fileAsset.mimeType);
     if (!secureUrl) return res.status(500).json({ status: 'error', message: 'Cloudinary not configured' });
 
     return res.status(200).json({ status: 'success', data: { url: secureUrl, filename: fileAsset.originalName, mimeType: fileAsset.mimeType } });

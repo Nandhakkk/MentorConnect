@@ -65,12 +65,12 @@ export default function StudentMentors() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '1.5rem' }}>
-        {mentorships.length === 0 ? (
+        {mentorships.filter(m => m.status === 'ACTIVE' || m.status === 'PENDING').length === 0 ? (
           <div className="glass-card" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '3rem' }}>
             <p style={{ color: 'var(--text-secondary)' }}>You don't have any mentorship requests or active connections.</p>
           </div>
         ) : (
-          mentorships.map(m => (
+          mentorships.filter(m => m.status === 'ACTIVE' || m.status === 'PENDING').map(m => (
             <div key={m.id} className="glass-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -107,6 +107,45 @@ export default function StudentMentors() {
                 <button onClick={() => handleCancel(m.id)} style={{ flex: 1, padding: '0.5rem', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '4px', cursor: 'pointer' }}>
                   {m.status === 'PENDING' ? 'Cancel Request' : 'Cancel Mentorship'}
                 </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      <div className="page-header" style={{ marginTop: '3rem' }}>
+        <div>
+          <h2 className="page-title">Past Mentorships</h2>
+          <p className="page-subtitle">Your historical mentorship records.</p>
+        </div>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '1.5rem' }}>
+        {mentorships.filter(m => m.status === 'CANCELLED' || m.status === 'COMPLETED').length === 0 ? (
+          <div className="glass-card" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '2rem' }}>
+            <p style={{ color: 'var(--text-secondary)' }}>No past mentorships.</p>
+          </div>
+        ) : (
+          mentorships.filter(m => m.status === 'CANCELLED' || m.status === 'COMPLETED').map(m => (
+            <div key={m.id} className="glass-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', opacity: 0.8 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div style={{ 
+                    width: '40px', height: '40px', borderRadius: '50%', background: 'var(--text-muted)', 
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold' 
+                  }}>
+                    {m.mentor?.user?.name?.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <h3 style={{ margin: '0 0 0.25rem 0', color: 'var(--text-primary)', fontSize: '1.1rem' }}>{m.mentor?.user?.name}</h3>
+                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{m.mentor?.expertise || 'Mentor'}</div>
+                  </div>
+                </div>
+                <span style={{ 
+                  fontSize: '0.75rem', padding: '0.2rem 0.5rem', borderRadius: '12px', 
+                  background: 'rgba(107, 114, 128, 0.1)', color: '#9ca3af' 
+                }}>
+                  {m.status}
+                </span>
               </div>
             </div>
           ))

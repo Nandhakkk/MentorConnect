@@ -30,7 +30,7 @@ export default function StudentMessages() {
   if (loading) return <div className="page-content">Loading...</div>;
 
   return (
-    <div className="page-content" style={{ padding: 0, height: 'calc(100vh - 60px)', display: 'flex', overflow: 'hidden' }}>
+    <div className="chat-workspace chat-workspace-student page-content" style={{ padding: 0, height: 'calc(100vh - 60px)', display: 'flex', overflow: 'hidden' }}>
 
       {/* Left: Mentorship list */}
       <div style={{ width: '260px', flexShrink: 0, borderRight: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>

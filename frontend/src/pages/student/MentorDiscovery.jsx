@@ -12,7 +12,27 @@ export default function MentorDiscovery() {
     try {
       setLoading(true);
       const data = await fetchAvailableMentors(params);
-      setMentors(data);
+      
+      let filtered = data;
+      if (params.search) {
+        const term = params.search.toLowerCase();
+        filtered = filtered.filter(m => 
+          m.user?.name?.toLowerCase().includes(term) || 
+          m.expertise?.toLowerCase().includes(term) ||
+          m.bio?.toLowerCase().includes(term)
+        );
+      }
+      if (params.mentorType) {
+        filtered = filtered.filter(m => m.mentorType === params.mentorType);
+      }
+      if (params.minFee) {
+        filtered = filtered.filter(m => (m.sessionFee || 0) >= Number(params.minFee));
+      }
+      if (params.maxFee) {
+        filtered = filtered.filter(m => (m.sessionFee || 0) <= Number(params.maxFee));
+      }
+
+      setMentors(filtered);
       setError('');
     } catch (err) {
       setError(err.message);

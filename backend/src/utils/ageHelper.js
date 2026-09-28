@@ -47,9 +47,17 @@ const validateDateOfBirth = (dateString) => {
   return date;
 };
 
+const getAgeCategory = (dateOfBirth) => {
+  const age = calculateAge(dateOfBirth);
+  if (age === null || age >= 18) return 'ADULT';
+  if (age >= 13) return 'MINOR_13_17';
+  return 'MINOR_UNDER_13';
+};
+
 module.exports = {
   calculateAge,
   isMinor,
   validateDateOfBirth,
-  MINOR_AGE_THRESHOLD
+  MINOR_AGE_THRESHOLD,
+  getAgeCategory
 };

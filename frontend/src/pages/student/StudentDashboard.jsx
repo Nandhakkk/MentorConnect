@@ -5,6 +5,7 @@ import DashboardCard from '../../components/DashboardCard';
 import { fetchGoals } from '../../services/goalService';
 import { fetchStudentMentorships } from '../../services/mentorService';
 import { fetchSessions } from '../../services/sessionService';
+import { getAgeCategory } from '../../utils/ageHelper';
 
 export default function StudentDashboard() {
   const { user } = useAuth();
@@ -26,6 +27,16 @@ export default function StudentDashboard() {
       <section className="glass-card"><h3 className="card-section-title">Your learning focus</h3>{activeGoals.length ? activeGoals.slice(0, 3).map((goal) => <Link key={goal.id} to={`/student/goals/${goal.id}`} className="quick-action-link"><span>◎</span><span>{goal.title}</span><span style={{ marginLeft: 'auto', color: 'var(--text-muted)' }}>{goal.milestones?.filter((m) => m.status === 'COMPLETED').length || 0}/{goal.milestones?.length || 0}</span></Link>) : <div className="empty-list-state"><p>Set a goal to create a focused learning plan.</p><Link className="btn btn-secondary" to="/student/goals">Browse goals</Link></div>}</section>
       <section className="glass-card"><h3 className="card-section-title">Next step</h3>{upcoming ? <><h4>{new Date(upcoming.scheduledAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</h4><p style={{ margin: '.5rem 0 1rem' }}>Session with {upcoming.mentorship?.mentor?.user?.name || 'your mentor'}.</p><Link className="btn btn-secondary" to="/student/sessions">View sessions</Link></> : activeMentorship ? <><p style={{ marginBottom: '1rem' }}>You are connected with {activeMentorship.mentor?.user?.name || 'a mentor'}. Book time when you are ready.</p><Link className="btn btn-secondary" to="/student/sessions">Book a session</Link></> : <><p style={{ marginBottom: '1rem' }}>Find an approved mentor who can help you reach your goals.</p><Link className="btn btn-primary" to="/student/mentor">Find a mentor</Link></>}</section>
     </div>
+    
+    {user?.dateOfBirth && getAgeCategory(user.dateOfBirth) !== 'ADULT' && (
+      <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'rgba(245, 158, 11, 0.1)', borderLeft: '4px solid #f59e0b', borderRadius: '4px' }}>
+        <h4 style={{ margin: '0 0 0.5rem 0', color: '#f59e0b' }}>Safety Reminder</h4>
+        <p style={{ margin: 0, color: 'var(--text-secondary)' }}>
+          Please remember to never share personal contact information such as phone numbers or home addresses with your mentor. Report any uncomfortable interactions immediately.
+        </p>
+      </div>
+    )}
+
     <section className="glass-card ai-dashboard-entry" style={{ marginTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}><div><span className="ai-card-kicker">MentorConnect AI</span><h3>Turn your goals into your next best step.</h3><p>Get personalized guidance based on your current goal and milestones.</p></div><Link to="/student/ai" className="btn btn-primary">Ask MentorConnect AI</Link></section>
   </div>;
 }

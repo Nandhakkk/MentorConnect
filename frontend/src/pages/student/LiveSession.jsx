@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { fetchLiveSession } from '../../services/sessionService';
 import { useAuth } from '../../context/AuthContext';
 import BackLink from '../../components/BackLink';
+import { getAgeCategory } from '../../utils/ageHelper';
 
 export default function LiveSession() {
   const { id } = useParams();
@@ -128,6 +129,17 @@ export default function LiveSession() {
           <span>Time: <strong style={{ color: 'white' }}>{new Date(sessionData.sessionDetails.scheduledAt).toLocaleTimeString()}</strong></span>
         </div>
       </div>
+      
+      {user?.dateOfBirth && getAgeCategory(user.dateOfBirth) !== 'ADULT' && (
+        <div style={{ marginBottom: '1.5rem', padding: '1rem', background: 'rgba(245, 158, 11, 0.1)', borderLeft: '4px solid #f59e0b', borderRadius: '4px' }}>
+          <h4 style={{ margin: '0 0 0.5rem 0', color: '#f59e0b' }}>Safety Reminder for Minors</h4>
+          <p style={{ margin: 0, color: 'var(--text-secondary)' }}>
+            {getAgeCategory(user.dateOfBirth) === 'YOUNGER_MINOR' 
+              ? "Ensure your parent or guardian is nearby or aware that you are joining this session. Do not turn on your camera if you are uncomfortable, and never share personal information."
+              : "Please remember not to share personal contact info during your sessions. If you ever feel uncomfortable, leave the session immediately and report it."}
+          </p>
+        </div>
+      )}
 
       <div className="glass-card" style={{ padding: '1rem' }}>
          <div ref={jitsiRef} style={jitsiContainerStyle} />

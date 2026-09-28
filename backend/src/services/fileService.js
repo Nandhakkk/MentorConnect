@@ -14,9 +14,9 @@ if (process.env.CLOUDINARY_CLOUD_NAME) {
  * Uploads a file buffer to Cloudinary.
  * @param {Buffer} fileBuffer
  * @param {string} folderPath e.g., 'mentorconnect/assignments/references'
- * @param {string} originalName 
+ * @param {string} mimeType 
  */
-const uploadToCloudinary = (fileBuffer, folderPath, originalName) => {
+const uploadToCloudinary = (fileBuffer, folderPath, originalName, mimeType) => {
   return new Promise((resolve, reject) => {
     if (!process.env.CLOUDINARY_CLOUD_NAME) {
       return reject(new Error("Cloudinary credentials are not configured in backend environment."));
@@ -25,7 +25,7 @@ const uploadToCloudinary = (fileBuffer, folderPath, originalName) => {
     const uploadStream = cloudinary.uploader.upload_stream(
       {
         folder: folderPath,
-        resource_type: 'auto',
+        resource_type: (mimeType && !mimeType.startsWith('image/') && !mimeType.startsWith('video/')) ? 'raw' : 'auto',
         use_filename: true,
         filename_override: originalName
       },
@@ -65,7 +65,7 @@ const saveFileAssetMetadata = async (ownerId, file, cloudinaryResult, category, 
 const processUploads = async (files, ownerId, folderPath, categoryType, entityId) => {
   const assets = [];
   for (const file of files) {
-    const cloudinaryRes = await uploadToCloudinary(file.buffer, folderPath, file.originalname);
+    const cloudinaryRes = await uploadToCloudinary(file.buffer, folderPath, file.originalname, file.mimetype);
     const asset = await saveFileAssetMetadata(ownerId, file, cloudinaryRes, categoryType, entityId);
     assets.push(asset);
   }
@@ -104,9 +104,10 @@ const deleteFileAsset = async (assetId, ownerId) => {
 /**
  * Generates secure, short-lived download/view URL (if applicable, else standard secure URL)
  */
-const generateSecureUrl = (publicId) => {
+const generateSecureUrl = (storageKey, mimeType = '') => {
   if (!process.env.CLOUDINARY_CLOUD_NAME) return null;
-  return cloudinary.url(publicId, { secure: true });
+  const isRaw = !mimeType.startsWith('image/') && !mimeType.startsWith('video/');
+  return cloudinary.url(storageKey, { secure: true, resource_type: isRaw ? 'raw' : 'image' });
 };
 
 module.exports = {
