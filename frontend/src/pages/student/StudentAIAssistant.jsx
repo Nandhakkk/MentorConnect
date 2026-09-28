@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
-import { Link } from 'react-router-dom';
 import { fetchGoals } from '../../services/goalService';
 import { askAI } from '../../services/aiService';
 import './ai-workspace.css';
@@ -53,6 +52,7 @@ export default function StudentAIAssistant() {
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState('');
   const [error, setError] = useState('');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   const chatScrollRef = useRef(null);
 
@@ -70,8 +70,6 @@ export default function StudentAIAssistant() {
     }
   }, [messages, loading]);
 
-  const selectedGoal = useMemo(() => goals.find((goal) => goal.id === selectedGoalId), [goals, selectedGoalId]);
-
   const submit = async (event) => {
     event?.preventDefault();
     const prompt = question.trim();
@@ -88,33 +86,94 @@ export default function StudentAIAssistant() {
   };
 
   const handleKeyDown = (event) => { if (event.key === 'Enter' && event.ctrlKey) submit(event); };
+  
   const handleSuggestionClick = (prompt) => {
     setQuestion(prompt);
   };
 
+  const handleNewChat = () => {
+    setMessages([]);
+    setQuestion('');
+    setError('');
+    setIsSidebarOpen(false);
+  };
+
+  const handleGoalSelect = (goalId) => {
+    setSelectedGoalId(goalId);
+    setIsSidebarOpen(false); // Close sidebar on mobile after selection
+  };
+
   return (
     <div className="ai-workspace-container">
-      {/* AI Header */}
-      <header className="ai-dedicated-header">
-        <div className="ai-header-brand">
-          <div className={`ai-orb ${loading ? 'thinking' : ''}`}>✨</div>
-          <div className="ai-header-text">
-            <h1>AI Learning Assistant</h1>
-            <p>Your personal guide for learning, goals and next steps.</p>
-          </div>
-        </div>
-        
-        <div className="ai-header-context">
-          <label htmlFor="ai-context">Context</label>
-          <select id="ai-context" className="ai-context-select" value={selectedGoalId} onChange={(event) => setSelectedGoalId(event.target.value)}>
-            <option value="">General Learning</option>
-            {goals.map((goal) => <option key={goal.id} value={goal.id}>{goal.title}</option>)}
-          </select>
-        </div>
-      </header>
+      
+      {/* Mobile Sidebar Overlay */}
+      <div 
+        className={`ai-sidebar-overlay ${isSidebarOpen ? 'open' : ''}`} 
+        onClick={() => setIsSidebarOpen(false)}
+      />
 
-      {/* Main Conversation Area */}
-      <main className="ai-main-content">
+      {/* Left Sidebar */}
+      <aside className={`ai-sidebar ${isSidebarOpen ? 'open' : ''}`}>
+        <div className="ai-sidebar-header">
+          <div className="ai-header-brand">
+            <div className={`ai-orb ${loading ? 'thinking' : ''}`}>✨</div>
+            <div className="ai-header-text">
+              <h1>AI Assistant</h1>
+              <p>Ready to help</p>
+            </div>
+          </div>
+          <button className="ai-new-chat-btn" onClick={handleNewChat}>
+            <span>+</span> New Chat
+          </button>
+        </div>
+
+        <div className="ai-sidebar-content">
+          <h2 className="ai-goals-title">Your Goals</h2>
+          
+          {loadError ? (
+            <p className="ai-error-banner" style={{ margin: 0, padding: '0.5rem', fontSize: '0.8rem' }}>{loadError}</p>
+          ) : (
+            <div className="ai-goals-list">
+              <button 
+                className={`ai-goal-item ${selectedGoalId === '' ? 'active' : ''}`}
+                onClick={() => handleGoalSelect('')}
+              >
+                <span className="ai-goal-icon">🎯</span> 
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span>General Learning</span>
+                </div>
+              </button>
+
+              {goals.map(goal => (
+                <button 
+                  key={goal.id}
+                  className={`ai-goal-item ${selectedGoalId === goal.id ? 'active' : ''}`}
+                  onClick={() => handleGoalSelect(goal.id)}
+                >
+                  <span className="ai-goal-icon">🎯</span>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span>{goal.title}</span>
+                    {goal.status && (
+                      <span style={{ fontSize: '0.7rem', opacity: 0.7, marginTop: '2px' }}>
+                        {goal.status}
+                      </span>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </aside>
+
+      {/* Main Content Area */}
+      <main className="ai-main-wrapper">
+        
+        {/* Mobile Header Toggle */}
+        <button className="ai-mobile-toggle" onClick={() => setIsSidebarOpen(true)}>
+          <span>☰</span> Goals & Context
+        </button>
+
         <div className="ai-chat-scroll-area" ref={chatScrollRef}>
           {messages.length === 0 && !loading && (
             <div className="ai-welcome-state">
@@ -132,30 +191,32 @@ export default function StudentAIAssistant() {
             </div>
           )}
 
-          {messages.map((message, index) => (
-            <div key={`${message.role}-${index}`} className={`ai-msg-row ${message.role}`}>
-              <div className="ai-msg-identity">
-                {message.role === 'assistant' ? (
-                  <><div className="ai-mini-orb"></div> MentorConnect AI</>
-                ) : 'You'}
+          <div className="ai-chat-content">
+            {messages.map((message, index) => (
+              <div key={`${message.role}-${index}`} className={`ai-msg-row ${message.role}`}>
+                <div className="ai-msg-identity">
+                  {message.role === 'assistant' ? (
+                    <><div className="ai-mini-orb"></div> MentorConnect AI</>
+                  ) : 'You'}
+                </div>
+                <div className="ai-msg-bubble">
+                  {message.role === 'user' ? message.content : <MarkdownResponse text={message.content} />}
+                </div>
               </div>
-              <div className="ai-msg-bubble">
-                {message.role === 'user' ? message.content : <MarkdownResponse text={message.content} />}
-              </div>
-            </div>
-          ))}
+            ))}
 
-          {loading && (
-            <div className="ai-loading-indicator">
-              <div className="ai-mini-orb"></div>
-              <span>AI is thinking</span>
-              <div className="ai-dots">
-                <span className="ai-dot"></span>
-                <span className="ai-dot"></span>
-                <span className="ai-dot"></span>
+            {loading && (
+              <div className="ai-loading-indicator">
+                <div className="ai-mini-orb"></div>
+                <span>AI is thinking</span>
+                <div className="ai-dots">
+                  <span className="ai-dot"></span>
+                  <span className="ai-dot"></span>
+                  <span className="ai-dot"></span>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {error && <div className="ai-error-banner">{error}</div>}
