@@ -173,10 +173,17 @@ const createSession = async (req, res) => {
       where: {
         mentorship: { mentorId: mentor.id },
         status: 'SCHEDULED'
-      }
+      },
+      include: { payment: true }
     });
 
     const hasConflict = conflictingSessions.some(sess => {
+      // Ignore unpaid abandoned carts (older than 15 minutes)
+      if (sess.payment && sess.payment.amount > 0 && sess.payment.status !== 'PAID') {
+        const ageMinutes = (new Date() - new Date(sess.createdAt)) / 60000;
+        if (ageMinutes > 15) return false;
+      }
+      
       const sessStart = new Date(sess.scheduledAt);
       const sessEnd = new Date(sessStart.getTime() + sess.duration * 60000);
       

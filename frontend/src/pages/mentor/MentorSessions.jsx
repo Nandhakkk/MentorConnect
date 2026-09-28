@@ -47,8 +47,17 @@ export default function MentorSessions() {
   if (loading) return <div className="page-content">Loading sessions...</div>;
 
   const now = new Date();
-  const upcoming = sessions.filter(s => new Date(s.scheduledAt) >= now && s.status === 'SCHEDULED');
-  const past = sessions.filter(s => new Date(s.scheduledAt) < now || s.status !== 'SCHEDULED');
+  const upcoming = sessions.filter(s => {
+    if (new Date(s.scheduledAt) < now || s.status !== 'SCHEDULED') return false;
+    if (s.payment && s.payment.amount > 0 && s.payment.status !== 'PAID') return false;
+    return true;
+  });
+  const past = sessions.filter(s => {
+    if (s.status === 'SCHEDULED' && new Date(s.scheduledAt) >= now) return false;
+    // Don't show abandoned carts in past either
+    if (s.status === 'SCHEDULED' && s.payment && s.payment.amount > 0 && s.payment.status !== 'PAID') return false;
+    return true;
+  });
 
   return (
     <div className="page-content">

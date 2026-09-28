@@ -76,7 +76,22 @@ const createRazorpayOrder = async (req, res) => {
       paymentId: session.payment.id
     });
   } catch (err) {
-    return res.status(500).json({ status: 'error', message: 'Failed to create order', details: err.message });
+    try {
+      if (req.body.sessionId) {
+        const sessToCleanup = await prisma.session.findUnique({
+          where: { id: req.body.sessionId },
+          include: { payment: true }
+        });
+        if (sessToCleanup && sessToCleanup.payment && sessToCleanup.payment.status === 'CREATED') {
+          await prisma.session.delete({ where: { id: req.body.sessionId } });
+        }
+      }
+    } catch (cleanupErr) {
+      console.error('Failed to cleanup orphaned session:', cleanupErr);
+    }
+    
+    console.error('Razorpay Error:', err?.error || err);
+    return res.status(500).json({ status: 'error', message: 'Failed to create order', details: err.message || 'Razorpay order creation failed' });
   }
 };
 
