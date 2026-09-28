@@ -1,16 +1,16 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import PageHeader from '../../components/PageHeader';
 import { fetchGoals } from '../../services/goalService';
 import { askAI } from '../../services/aiService';
+import './ai-workspace.css';
 
-const QUICK_ACTIONS = [
-  ['Explain My Goal', 'Explain my current goal and what skills I should focus on.'],
-  ['What Should I Focus On?', 'Based on my current goal and incomplete milestones, what should I focus on next?'],
-  ['Help Me With My Milestones', 'Review my incomplete milestones and suggest what I should work on next.'],
-  ['Prepare Me For My Next Session', 'Based on my current goal and progress, what should I discuss with my mentor in my next session?']
+const SUGGESTIONS = [
+  'What should I study next?',
+  'Help me plan my goal',
+  'Create a learning roadmap',
+  'Explain a difficult topic',
+  'Create a study plan'
 ];
-const SUGGESTIONS = ['What should I focus on next?', 'Why am I falling behind on my goal?', 'Explain my current milestones.', 'How can I prepare for my next mentor session?', 'What skills should I improve for this goal?'];
 
 function InlineMarkdown({ text }) {
   const parts = text.split(/(\*\*[^*]+\*\*)/g);
@@ -53,6 +53,8 @@ export default function StudentAIAssistant() {
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState('');
   const [error, setError] = useState('');
+  
+  const chatScrollRef = useRef(null);
 
   useEffect(() => {
     fetchGoals().then((data) => {
@@ -62,10 +64,13 @@ export default function StudentAIAssistant() {
     }).catch(() => setLoadError('Your goals could not be loaded. You can still ask a general question.'));
   }, []);
 
+  useEffect(() => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
+  }, [messages, loading]);
+
   const selectedGoal = useMemo(() => goals.find((goal) => goal.id === selectedGoalId), [goals, selectedGoalId]);
-  const completed = selectedGoal?.milestones?.filter((milestone) => milestone.status === 'COMPLETED').length || 0;
-  const total = selectedGoal?.milestones?.length || 0;
-  const progress = total ? Math.round((completed / total) * 100) : 0;
 
   const submit = async (event) => {
     event?.preventDefault();
@@ -83,41 +88,105 @@ export default function StudentAIAssistant() {
   };
 
   const handleKeyDown = (event) => { if (event.key === 'Enter' && event.ctrlKey) submit(event); };
+  const handleSuggestionClick = (prompt) => {
+    setQuestion(prompt);
+  };
 
-  return <div className="page-content ai-workspace">
-    <div className="ai-header" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem 0 1.5rem', borderBottom: '1px solid var(--border-subtle)', marginBottom: '1.5rem' }}>
-      <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'linear-gradient(135deg, #4f46e5, #a855f7)', display: 'grid', placeItems: 'center', color: '#fff', fontSize: '1.5rem' }}>✨</div>
-      <div>
-        <h1 style={{ margin: 0, fontSize: '1.5rem', color: 'var(--text-primary)' }}>MentorConnect AI</h1>
-        <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Your personal AI learning and mentoring assistant</p>
-      </div>
-    </div>
-    <div className="ai-layout">
-      <aside className="ai-sidebar">
-        <section className="glass-card ai-goal-card">
-          <div className="ai-card-kicker">Current goal</div>
-          <label htmlFor="ai-goal-select" className="sr-only">AI goal context</label>
-          <select id="ai-goal-select" value={selectedGoalId} onChange={(event) => setSelectedGoalId(event.target.value)}>
-            <option value="">All active goals</option>
+  return (
+    <div className="ai-workspace-container">
+      {/* AI Header */}
+      <header className="ai-dedicated-header">
+        <div className="ai-header-brand">
+          <div className={`ai-orb ${loading ? 'thinking' : ''}`}>✨</div>
+          <div className="ai-header-text">
+            <h1>AI Learning Assistant</h1>
+            <p>Your personal guide for learning, goals and next steps.</p>
+          </div>
+        </div>
+        
+        <div className="ai-header-context">
+          <label htmlFor="ai-context">Context</label>
+          <select id="ai-context" className="ai-context-select" value={selectedGoalId} onChange={(event) => setSelectedGoalId(event.target.value)}>
+            <option value="">General Learning</option>
             {goals.map((goal) => <option key={goal.id} value={goal.id}>{goal.title}</option>)}
           </select>
-          {selectedGoal ? <div className="ai-goal-summary"><h3>{selectedGoal.title}</h3>{selectedGoal.description && <p>{selectedGoal.description}</p>}<span className="badge badge-success">{selectedGoal.status}</span><div className="progress-label"><span>Milestone progress</span><strong>{progress}%</strong></div><div className="progress-track"><span style={{ width: `${progress}%` }} /></div><p className="progress-copy">{completed} of {total} milestones completed</p></div> : <div className="ai-empty-goal"><h3>No active goal yet</h3><p>Create a goal to unlock personalized AI guidance.</p><Link className="btn btn-primary" to="/student/goals">Create a goal</Link></div>}
-          {loadError && <p className="ai-inline-error">{loadError}</p>}
-        </section>
-        <section className="glass-card ai-context-card"><h3>AI Context</h3><ul><li>Current goal{selectedGoal ? '' : 's'}</li><li>Goal milestones</li><li>Milestone completion status</li></ul><p>Context is sent only from your MentorConnect goals and milestones.</p></section>
-        <section className="glass-card"><h3 className="ai-section-title">Quick AI actions</h3><div className="ai-actions">{QUICK_ACTIONS.map(([label, prompt]) => <button key={label} type="button" onClick={() => setQuestion(prompt)}>{label}</button>)}</div></section>
-      </aside>
-      <section className="glass-card ai-chat-card">
-        <div className="ai-chat-heading"><div><h3>Learning conversation</h3><p>Review and refine each question before you send it.</p></div><span className="badge badge-purple">Goal-aware</span></div>
-        <div className="ai-chat-history" aria-live="polite">
-          {messages.length === 0 && !loading && <div className="ai-chat-empty"><span>✦</span><h3>Start a focused learning conversation</h3><p>Choose an action or write a question about your goals, milestones, and next steps.</p></div>}
-          {messages.map((message, index) => <div key={`${message.role}-${index}`} className={`ai-message ${message.role}`}><div className="ai-message-label">{message.role === 'user' ? 'You' : 'MentorConnect AI'}</div><div className="ai-message-body">{message.role === 'user' ? message.content : <MarkdownResponse text={message.content} />}</div></div>)}
-          {loading && <div className="ai-thinking"><span className="ai-spinner" />MentorConnect AI is thinking...</div>}
         </div>
-        {error && <div className="ai-error" role="alert">{error}</div>}
-        <form onSubmit={submit} className="ai-composer"><label htmlFor="ai-question">Ask MentorConnect AI</label><textarea id="ai-question" value={question} onChange={(event) => setQuestion(event.target.value)} onKeyDown={handleKeyDown} placeholder="Ask MentorConnect AI about your goal..." rows="4" maxLength="2000" disabled={loading} /><div className="ai-composer-footer"><span>{question.length}/2000 · Ctrl+Enter to send</span><button type="submit" className="btn btn-primary" disabled={loading || !question.trim()}>{loading ? 'Thinking...' : 'Send to AI'}</button></div></form>
-        <div className="ai-suggestions"><span>Try asking MentorConnect AI</span><div>{SUGGESTIONS.map((prompt) => <button key={prompt} type="button" onClick={() => setQuestion(prompt)}>{prompt}</button>)}</div></div>
-      </section>
+      </header>
+
+      {/* Main Conversation Area */}
+      <main className="ai-main-content">
+        <div className="ai-chat-scroll-area" ref={chatScrollRef}>
+          {messages.length === 0 && !loading && (
+            <div className="ai-welcome-state">
+              <h2>How can I help you learn today?</h2>
+              <p>Tell me what you're trying to achieve, and I'll help you break it into practical next steps.</p>
+              
+              <div className="ai-suggestions-grid">
+                {SUGGESTIONS.map((prompt, idx) => (
+                  <button key={idx} className="ai-suggestion-chip" onClick={() => handleSuggestionClick(prompt)}>
+                    <span>{idx === 0 ? '📚' : idx === 1 ? '🎯' : idx === 2 ? '🗺️' : idx === 3 ? '💡' : '⏱️'}</span>
+                    {prompt}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {messages.map((message, index) => (
+            <div key={`${message.role}-${index}`} className={`ai-msg-row ${message.role}`}>
+              <div className="ai-msg-identity">
+                {message.role === 'assistant' ? (
+                  <><div className="ai-mini-orb"></div> MentorConnect AI</>
+                ) : 'You'}
+              </div>
+              <div className="ai-msg-bubble">
+                {message.role === 'user' ? message.content : <MarkdownResponse text={message.content} />}
+              </div>
+            </div>
+          ))}
+
+          {loading && (
+            <div className="ai-loading-indicator">
+              <div className="ai-mini-orb"></div>
+              <span>AI is thinking</span>
+              <div className="ai-dots">
+                <span className="ai-dot"></span>
+                <span className="ai-dot"></span>
+                <span className="ai-dot"></span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {error && <div className="ai-error-banner">{error}</div>}
+
+        {/* Message Composer */}
+        <div className="ai-composer-container">
+          <form className="ai-composer-box" onSubmit={submit}>
+            <textarea
+              className="ai-composer-input"
+              value={question}
+              onChange={(event) => setQuestion(event.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask your AI learning assistant..."
+              rows={Math.min(5, question.split('\n').length || 1)}
+              disabled={loading}
+              aria-label="Ask MentorConnect AI"
+            />
+            <div className="ai-composer-actions">
+              <span className="ai-composer-hint">Ctrl+Enter to send</span>
+              <button 
+                type="submit" 
+                className="ai-composer-send" 
+                disabled={loading || !question.trim()}
+                aria-label="Send message"
+              >
+                ➤
+              </button>
+            </div>
+          </form>
+        </div>
+      </main>
     </div>
-  </div>;
+  );
 }
