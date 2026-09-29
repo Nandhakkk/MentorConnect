@@ -43,7 +43,11 @@ export default function ProfileMenu() {
         aria-expanded={isOpen}
         aria-haspopup="true"
       >
-        <span className="profile-avatar">{user.name?.charAt(0)?.toUpperCase() || 'U'}</span>
+        {user.profileImage ? (
+          <img src={user.profileImage} alt={user.name} className="profile-avatar" style={{ objectFit: 'cover' }} />
+        ) : (
+          <span className="profile-avatar">{user.name?.charAt(0)?.toUpperCase() || 'U'}</span>
+        )}
         <span className="profile-name">{user.name}</span>
         <span className="profile-caret">▾</span>
       </button>
@@ -51,7 +55,11 @@ export default function ProfileMenu() {
       {isOpen && (
         <div className="profile-dropdown-menu">
           <div className="profile-dropdown-header">
-            <span className="dropdown-avatar">{user.name?.charAt(0)?.toUpperCase() || 'U'}</span>
+            {user.profileImage ? (
+              <img src={user.profileImage} alt={user.name} className="dropdown-avatar" style={{ objectFit: 'cover' }} />
+            ) : (
+              <span className="dropdown-avatar">{user.name?.charAt(0)?.toUpperCase() || 'U'}</span>
+            )}
             <div className="dropdown-user-info">
               <span className="dropdown-name">{user.name}</span>
               <span className="dropdown-role">{user.role?.toLowerCase()}</span>
