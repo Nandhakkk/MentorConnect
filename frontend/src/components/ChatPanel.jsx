@@ -13,7 +13,33 @@ import { useAuth } from '../context/AuthContext';
  * Chat panel for a single mentorship.
  * Used by both StudentMessages and MentorMessages.
  */
-export default function ChatPanel({ mentorship, otherPartyName }) {
+function formatDate(dateString) {
+  const date = new Date(dateString);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  
+  if (date.toDateString() === today.toDateString()) return 'Today';
+  if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
+  return date.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+function groupMessagesByDate(messages) {
+  const groups = [];
+  let currentDate = null;
+
+  messages.forEach(msg => {
+    const msgDate = new Date(msg.createdAt).toDateString();
+    if (msgDate !== currentDate) {
+      currentDate = msgDate;
+      groups.push({ type: 'date', date: msgDate, id: `date-${msg.id}` });
+    }
+    groups.push({ type: 'message', message: msg, id: msg.id });
+  });
+  return groups;
+}
+
+export default function ChatPanel({ mentorship, otherPartyName, otherPartyRole }) {
   const { user } = useAuth();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -82,39 +108,62 @@ export default function ChatPanel({ mentorship, otherPartyName }) {
   }
 
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', background: 'var(--bg-primary)' }}>
+    <div className="chat-window-modern">
       {/* Chat header */}
-      <div className="chat-header">
-        <h3>
-          <span className="chat-status-indicator"></span>
-          {otherPartyName}
-        </h3>
-        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Active mentorship</span>
+      <div className="chat-header-modern">
+        <div className="chat-header-avatar">
+          {otherPartyName.charAt(0).toUpperCase()}
+        </div>
+        <div className="chat-header-info">
+          <h3>
+            {otherPartyName}
+          </h3>
+          <div className="chat-header-meta">
+            <span className="chat-status-indicator"></span>
+            <span>{otherPartyRole}</span>
+          </div>
+        </div>
       </div>
 
       {/* Messages area */}
-      <div className="chat-messages">
+      <div className="chat-messages-modern">
         {error && <div style={{ color: 'var(--error)', textAlign: 'center' }}>{error}</div>}
 
         {messages.length === 0 ? (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
-            Start the conversation with your {user?.role === 'STUDENT' ? 'mentor' : 'student'}.
+          <div className="chat-empty-state">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '1rem', color: '#a5b4fc' }}>
+              <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+            </svg>
+            <p>Start a conversation</p>
+            <span>Send a message to begin chatting with your {user?.role === 'STUDENT' ? 'mentor' : 'student'}.</span>
           </div>
         ) : (
-          messages.map((msg) => {
-            const isMine = msg.sender?.id === user?.id || msg.senderId === user?.id;
-            return (
-              <div key={msg.id} className={`chat-message ${isMine ? 'self' : 'other'}`}>
-                {!isMine && (
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem', marginLeft: '0.25rem' }}>
-                    {msg.sender?.name}
-                  </span>
-                )}
-                <div className="message-bubble">
-                  {msg.content}
+          groupMessagesByDate(messages).map((item) => {
+            if (item.type === 'date') {
+              return (
+                <div key={item.id} className="chat-date-separator">
+                  <span>{formatDate(item.date)}</span>
                 </div>
-                <div className="message-meta">
-                  {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              );
+            }
+            
+            const msg = item.message;
+            const isMine = msg.sender?.id === user?.id || msg.senderId === user?.id;
+            
+            return (
+              <div key={msg.id} className={`chat-message-modern ${isMine ? 'self' : 'other'}`}>
+                {!isMine && (
+                  <div className="chat-message-avatar">
+                    {(msg.sender?.name || otherPartyName).charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <div className="chat-message-content">
+                  <div className="message-bubble-modern">
+                    {msg.content}
+                  </div>
+                  <div className="message-time-modern">
+                    {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </div>
                 </div>
               </div>
             );
@@ -124,7 +173,7 @@ export default function ChatPanel({ mentorship, otherPartyName }) {
       </div>
 
       {/* Input area */}
-      <form className="chat-input-area" onSubmit={handleSend}>
+      <form className="chat-input-area-modern" onSubmit={handleSend}>
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -140,7 +189,7 @@ export default function ChatPanel({ mentorship, otherPartyName }) {
         />
         <button
           type="submit"
-          className="btn btn-primary chat-send-btn"
+          className="chat-send-btn-modern"
           disabled={!input.trim()}
           aria-label="Send message"
         >

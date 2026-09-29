@@ -29,16 +29,16 @@ export default function MentorMessages() {
   if (loading) return <div className="page-content">Loading...</div>;
 
   return (
-    <div className="chat-workspace chat-workspace-mentor page-content" style={{ padding: 0, height: 'calc(100vh - 60px)', display: 'flex', overflow: 'hidden' }}>
+    <div className="chat-workspace-page">
 
       {/* Left: Student list */}
-      <div style={{ width: '260px', flexShrink: 0, borderRight: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
-        <div style={{ padding: '1.25rem 1rem', borderBottom: '1px solid var(--border-subtle)' }}>
-          <h3 style={{ margin: 0, fontSize: '0.95rem', color: 'var(--text-secondary)' }}>My Students</h3>
+      <div className="chat-sidebar-modern">
+        <div className="chat-sidebar-header">
+          <h3>My Students</h3>
         </div>
 
         {mentorships.length === 0 ? (
-          <div style={{ padding: '2rem 1rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+          <div style={{ padding: '2rem 1rem', color: '#94a3b8', fontSize: '0.9rem', textAlign: 'center' }}>
             No active mentorships yet.
           </div>
         ) : (
@@ -49,27 +49,14 @@ export default function MentorMessages() {
               <button
                 key={m.id}
                 onClick={() => setSelectedMentorship(m)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.75rem',
-                  padding: '0.9rem 1rem',
-                  background: isSelected ? 'rgba(99,102,241,0.15)' : 'transparent',
-                  border: 'none',
-                  borderLeft: isSelected ? '3px solid #6366f1' : '3px solid transparent',
-                  color: isSelected ? 'var(--text-primary)' : 'var(--text-secondary)',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  width: '100%',
-                  transition: 'background 0.15s'
-                }}
+                className={`chat-sidebar-item ${isSelected ? 'active' : ''}`}
               >
-                <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg,#6366f1,#a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold', flexShrink: 0 }}>
+                <div className="chat-sidebar-item-avatar">
                   {name.charAt(0).toUpperCase()}
                 </div>
-                <div>
-                  <div style={{ fontWeight: isSelected ? 600 : 400, fontSize: '0.9rem' }}>{name}</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{m.student?.careerGoal || 'Student'}</div>
+                <div className="chat-sidebar-item-info">
+                  <div className="chat-sidebar-item-name">{name}</div>
+                  <div className="chat-sidebar-item-role">{m.student?.careerGoal || 'Student'}</div>
                 </div>
               </button>
             );
@@ -83,10 +70,12 @@ export default function MentorMessages() {
           key={selectedMentorship.id}
           mentorship={selectedMentorship}
           otherPartyName={selectedMentorship.student?.user?.name || 'Student'}
+          otherPartyRole="Student"
         />
       ) : (
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
-          Select a student to start chatting.
+        <div className="chat-empty-state" style={{ flex: 1 }}>
+          <p>No student selected</p>
+          <span>Select a student to start chatting.</span>
         </div>
       )}
     </div>
