@@ -132,10 +132,17 @@ async function runTests() {
       return { status: res.status, body: data };
     };
 
+    // Test: Premature completion before scheduled end time fails
+    try {
+      const res = await doRequest('PUT', `/api/sessions/${sessionId}/complete`, mentorToken);
+      const success = res.status === 400 && res.body.message.includes('before its scheduled end time');
+      logResult('Premature completion rejected (before end time)', '400', `${res.status} (${res.body.message})`, success ? 'PASS' : 'FAIL');
+    } catch (e) { logResult('Premature completion rejected (before end time)', 'Error', String(e), 'FAIL'); }
+
     // Test: Unpaid session completion
     try {
       const unpaidSession = await prisma.session.create({
-        data: { mentorshipId, scheduledAt: new Date(), duration: 30, topic: 'Unpaid', status: 'SCHEDULED' }
+        data: { mentorshipId, scheduledAt: new Date(Date.now() - 7200000), duration: 30, topic: 'Unpaid', status: 'SCHEDULED' }
       });
       const unpaidPayment = await prisma.payment.create({
         data: { studentId: mentorship.studentId, mentorId: mentorship.mentorId, sessionId: unpaidSession.id, amount: 500, platformFee: 50, mentorAmount: 450, status: 'CREATED' }
@@ -146,8 +153,14 @@ async function runTests() {
       logResult('Unpaid session completion fails', '400', String(res.status), res.status === 400 ? 'PASS' : 'FAIL');
     } catch (e) { logResult('Unpaid session completion fails', 'Error', String(e), 'FAIL'); }
 
-    // Test: Paid session completion creates payout
+    // Test: Paid session completion after end time creates payout
     try {
+      // Advance session scheduledAt to 2 hours ago (duration 60m => ended 1 hour ago)
+      await prisma.session.update({
+        where: { id: sessionId },
+        data: { scheduledAt: new Date(Date.now() - 7200000) }
+      });
+
       const res = await doRequest('PUT', `/api/sessions/${sessionId}/complete`, mentorToken);
       
       const payout = await prisma.payoutRecord.findFirst({ where: { paymentId } });
@@ -167,7 +180,7 @@ async function runTests() {
     // Test: Cancelled session does not create payout
     try {
       const cancelledSession = await prisma.session.create({
-        data: { mentorshipId, scheduledAt: new Date(), duration: 30, topic: 'Cancelled', status: 'CANCELLED' }
+        data: { mentorshipId, scheduledAt: new Date(Date.now() - 7200000), duration: 30, topic: 'Cancelled', status: 'CANCELLED' }
       });
       const cancelledPayment = await prisma.payment.create({
         data: { studentId: mentorship.studentId, mentorId: mentorship.mentorId, sessionId: cancelledSession.id, amount: 500, platformFee: 50, mentorAmount: 450, status: 'PAID' }
