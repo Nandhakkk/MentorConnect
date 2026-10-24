@@ -63,7 +63,7 @@ export default function Login() {
         {error && (
           <div style={{
             backgroundColor: 'var(--error-bg)',
-            border: '1px solid rgba(239, 68, 68, 0.3)',
+            border: '1px solid var(--error-border)',
             borderRadius: 'var(--radius-md)',
             padding: '0.75rem 1rem',
             marginBottom: '1.5rem',

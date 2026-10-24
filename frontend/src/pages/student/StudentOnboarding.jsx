@@ -1,27 +1,73 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import MinorStudentOnboarding from './MinorStudentOnboarding';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 export default function StudentOnboarding() {
-  const { token } = useAuth();
+  const { user, token } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [checkingAge, setCheckingAge] = useState(true);
+  const [isMinorStudent, setIsMinorStudent] = useState(() => {
+    if (user?.dateOfBirth) {
+      const dob = new Date(user.dateOfBirth);
+      const today = new Date();
+      let age = today.getFullYear() - dob.getFullYear();
+      const m = today.getMonth() - dob.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+        age--;
+      }
+      return age < 18;
+    }
+    return false;
+  });
   const [error, setError] = useState('');
+
+  // Synchronize strictly with backend calculation
+  useEffect(() => {
+    async function checkAgeFromBackend() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/guardian/status`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await response.json();
+        if (data.status === 'success' && data.data) {
+          setIsMinorStudent(Boolean(data.data.isMinor));
+        }
+      } catch (err) {
+        console.warn('Backend age status check:', err.message);
+      } finally {
+        setCheckingAge(false);
+      }
+    }
+
+    if (token) {
+      checkAgeFromBackend();
+    } else {
+      setCheckingAge(false);
+    }
+  }, [token]);
 
   const [formData, setFormData] = useState({
     education: '',
     experienceLevel: '',
     skills: '',
     interests: '',
-    careerGoal: '',
+    careerGoal: user?.studentProfile?.careerGoal || '',
     preferredLearningStyle: '',
     preferredLanguage: 'English',
     budget: '',
     studyAvailability: ''
   });
+
+  useEffect(() => {
+    if (user?.studentProfile?.careerGoal && !formData.careerGoal) {
+      setFormData(prev => ({ ...prev, careerGoal: user.studentProfile.careerGoal }));
+    }
+  }, [user]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -51,14 +97,25 @@ export default function StudentOnboarding() {
         throw new Error(data.message || 'Failed to complete onboarding');
       }
 
-      // Force a window reload or navigate to dashboard to refresh AuthContext
-      // A full reload ensures AuthContext refetches the user profile with onboardingCompleted: true
       window.location.href = '/student/dashboard';
     } catch (err) {
       setError(err.message);
       setLoading(false);
     }
   };
+
+  if (checkingAge) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh', color: 'var(--text-secondary)' }}>
+        <p>Loading onboarding experience...</p>
+      </div>
+    );
+  }
+
+  // Under-18 students follow the dedicated Minor Student Onboarding workflow
+  if (isMinorStudent) {
+    return <MinorStudentOnboarding />;
+  }
 
   return (
     <div className="page-content" style={{ display: 'flex', justifyContent: 'center' }}>
@@ -69,7 +126,7 @@ export default function StudentOnboarding() {
         </div>
 
         {error && (
-          <div style={{ padding: '1rem', background: 'var(--error-bg)', color: 'var(--error)', borderRadius: 'var(--radius-md)', marginBottom: '1.5rem' }}>
+          <div style={{ padding: '1rem', background: 'var(--error-subtle)', color: 'var(--error)', border: '1px solid var(--error)', borderRadius: 'var(--radius-md)', marginBottom: '1.5rem' }}>
             {error}
           </div>
         )}
@@ -153,7 +210,7 @@ export default function StudentOnboarding() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               <h3 style={{ fontSize: '1.25rem' }}>Step 5: Budget & Confirmation</h3>
               <div>
-                <label className="form-label">Session Budget (Approx USD / hour)</label>
+                <label className="form-label">Session Budget (Approx INR / hour)</label>
                 <input required type="number" min="0" step="0.01" name="budget" className="form-input" value={formData.budget} onChange={handleChange} placeholder="e.g. 15.00" />
                 <small style={{ color: 'var(--text-secondary)', display: 'block', marginTop: '0.5rem' }}>Set to 0 if looking for free peer mentorship.</small>
               </div>

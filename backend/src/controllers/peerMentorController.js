@@ -2,6 +2,49 @@ const prisma = require('../config/db');
 const { checkPeerMentorEligibility } = require('../utils/peerMentorEligibility');
 const aiService = require('../services/aiService');
 
+const peerMentorUserIncludes = {
+  studentProfile: {
+    include: {
+      goals: {
+        select: { id: true, title: true, status: true, createdAt: true }
+      },
+      mentorships: {
+        include: {
+          sessions: {
+            include: {
+              payment: {
+                include: {
+                  refunds: {
+                    select: { id: true, status: true }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      assignments: {
+        include: {
+          submissions: {
+            select: { id: true, status: true, submittedAt: true }
+          }
+        }
+      }
+    }
+  },
+  mentorProfile: {
+    include: {
+      peerApplications: {
+        orderBy: { createdAt: 'desc' },
+        include: { aiScreening: true }
+      }
+    }
+  },
+  complaintsReceived: {
+    select: { id: true, status: true, category: true, createdAt: true }
+  }
+};
+
 /**
  * GET /api/peer-mentor/apply/eligibility
  */
@@ -9,12 +52,7 @@ const getEligibility = async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
-      include: {
-        studentProfile: true,
-        mentorProfile: {
-          include: { peerApplications: true }
-        }
-      }
+      include: peerMentorUserIncludes
     });
 
     if (!user) {
@@ -23,17 +61,25 @@ const getEligibility = async (req, res) => {
 
     const eligibility = checkPeerMentorEligibility(user);
     let applicationStatus = null;
+    let latestApplication = null;
 
     if (user.mentorProfile && user.mentorProfile.mentorType === 'PEER' && user.mentorProfile.status === 'APPROVED') {
       applicationStatus = 'APPROVED';
-    } else if (user.mentorProfile && user.mentorProfile.peerApplications && user.mentorProfile.peerApplications.length > 0) {
+    }
+
+    if (user.mentorProfile && user.mentorProfile.peerApplications && user.mentorProfile.peerApplications.length > 0) {
+      latestApplication = user.mentorProfile.peerApplications[0];
       // Find the most recent active application
       const activeApp = user.mentorProfile.peerApplications.find(app => ['PENDING', 'AI_SCREENED', 'UNDER_REVIEW'].includes(app.status));
       if (activeApp) {
         applicationStatus = activeApp.status;
-      } else {
+        latestApplication = activeApp;
+      } else if (!applicationStatus) {
         const rejectedApp = user.mentorProfile.peerApplications.find(app => app.status === 'REJECTED');
-        if (rejectedApp) applicationStatus = 'REJECTED';
+        if (rejectedApp) {
+          applicationStatus = 'REJECTED';
+          latestApplication = rejectedApp;
+        }
       }
     }
 
@@ -41,7 +87,8 @@ const getEligibility = async (req, res) => {
       status: 'success',
       data: {
         ...eligibility,
-        applicationStatus
+        applicationStatus,
+        latestApplication
       }
     });
   } catch (err) {
@@ -57,17 +104,12 @@ const createApplication = async (req, res) => {
     const { eligibilityInfo } = req.body; // Using eligibilityInfo field as a JSON string or text to hold motivation/skills
 
     if (!eligibilityInfo) {
-      return res.status(400).json({ status: 'error', message: 'Application details are required' });
+      return res.status(400).json({ status: 'error', message: 'Application details (motivation, topics, and experience) are required' });
     }
 
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
-      include: {
-        studentProfile: true,
-        mentorProfile: {
-          include: { peerApplications: true }
-        }
-      }
+      include: peerMentorUserIncludes
     });
 
     if (!user) {
@@ -75,19 +117,26 @@ const createApplication = async (req, res) => {
     }
 
     if (user.role !== 'STUDENT') {
-      return res.status(403).json({ status: 'error', message: 'Only students can apply to be a peer mentor' });
+      return res.status(403).json({ status: 'error', message: 'Only registered students can apply to become a peer mentor' });
     }
 
+    // Authoritative Server-Side Eligibility Enforcement
     const eligibility = checkPeerMentorEligibility(user);
     if (!eligibility.eligible) {
-      return res.status(400).json({ status: 'error', message: 'You are not eligible to apply', reasons: eligibility.reasons });
+      return res.status(400).json({
+        status: 'error',
+        message: 'You are not yet eligible to apply as a Peer Mentor.',
+        reasons: eligibility.reasons,
+        criteria: eligibility.criteria,
+        stats: eligibility.stats
+      });
     }
 
-    // Check for existing application
+    // Check for existing active application
     if (user.mentorProfile && user.mentorProfile.peerApplications) {
       const activeApp = user.mentorProfile.peerApplications.find(app => ['PENDING', 'AI_SCREENED', 'UNDER_REVIEW'].includes(app.status));
       if (activeApp) {
-        return res.status(400).json({ status: 'error', message: 'You already have an active peer mentor application' });
+        return res.status(400).json({ status: 'error', message: 'You already have an active peer mentor application in progress.' });
       }
     }
 
@@ -135,7 +184,8 @@ const getMyApplication = async (req, res) => {
           include: {
             peerApplications: {
               orderBy: { createdAt: 'desc' },
-              take: 1
+              take: 1,
+              include: { aiScreening: true }
             }
           }
         }
@@ -224,85 +274,27 @@ const screenApplication = async (req, res) => {
 
     const application = user.mentorProfile.peerApplications[0];
 
-    if (application.status !== 'PENDING') {
-      return res.status(400).json({ status: 'error', message: 'Only PENDING applications can be screened' });
+    if (application.status !== 'PENDING' && application.status !== 'AI_SCREENED') {
+      return res.status(400).json({ status: 'error', message: `Cannot run screening when status is ${application.status}.` });
     }
 
-    const studentData = {
-      age: user.dateOfBirth ? (new Date().getFullYear() - new Date(user.dateOfBirth).getFullYear()) : null,
-      education: user.studentProfile.education,
-      experienceLevel: user.studentProfile.experienceLevel,
-      skills: user.studentProfile.skills,
-      interests: user.studentProfile.interests,
-      careerGoal: user.studentProfile.careerGoal,
-      learningStyle: user.studentProfile.preferredLearningStyle,
-      language: user.studentProfile.preferredLanguage,
-      studyAvailability: user.studentProfile.studyAvailability,
-      applicationInfo: application.eligibilityInfo
-    };
+    const mentorScreeningService = require('../services/mentorScreeningService');
+    const result = await mentorScreeningService.screenPeerMentorApplication(application.id);
 
-    const prompt = aiService.buildPeerScreeningPrompt(studentData);
-    let aiResponseText;
-
-    try {
-      aiResponseText = await aiService.generateText(prompt);
-    } catch (aiError) {
-      return res.status(503).json({ status: 'error', message: 'AI service unavailable. Please try again later.' });
-    }
-
-    let parsedResponse;
-    try {
-      // Strip markdown code blocks if any
-      const cleanedJson = aiResponseText.replace(/```json/g, '').replace(/```/g, '').trim();
-      parsedResponse = JSON.parse(cleanedJson);
-      
-      // Basic validation
-      if (!parsedResponse.recommendation || !Array.isArray(parsedResponse.strengths)) {
-        throw new Error('Invalid AI response structure');
-      }
-    } catch (parseError) {
-      return res.status(502).json({ status: 'error', message: 'Failed to process AI response properly' });
-    }
-
-    const screeningResult = await prisma.$transaction(async (tx) => {
-      const screening = await tx.aIScreeningResult.upsert({
-        where: { peerApplicationId: application.id },
-        update: {
-          screeningStatus: 'COMPLETED',
-          recommendation: parsedResponse.recommendation,
-          structuredFindings: {
-            strengths: parsedResponse.strengths || [],
-            concerns: parsedResponse.concerns || [],
-            developmentAreas: parsedResponse.developmentAreas || []
-          },
-          riskFlags: parsedResponse.riskFlags || [],
-          modelInfo: aiService.modelName
-        },
-        create: {
-          peerApplicationId: application.id,
-          screeningStatus: 'COMPLETED',
-          recommendation: parsedResponse.recommendation,
-          structuredFindings: {
-            strengths: parsedResponse.strengths || [],
-            concerns: parsedResponse.concerns || [],
-            developmentAreas: parsedResponse.developmentAreas || []
-          },
-          riskFlags: parsedResponse.riskFlags || [],
-          modelInfo: aiService.modelName
-        }
-      });
-
-      await tx.peerMentorApplication.update({
-        where: { id: application.id },
-        data: { status: 'AI_SCREENED' }
-      });
-
-      return screening;
+    return res.status(200).json({
+      status: 'success',
+      message: result.outcome === 'AUTO_REJECTED'
+        ? 'Application evaluated: Ineligible on published objective criteria.'
+        : result.outcome === 'ELIGIBLE'
+          ? 'Application pre-screening complete: Eligible for administrative approval.'
+          : 'Application pre-screening complete: Queued for manual administrator review.',
+      outcome: result.outcome,
+      screeningResult: result.screeningResult,
+      application: result.application,
+      failedCriteria: result.failedCriteria || null
     });
-
-    return res.status(200).json({ status: 'success', data: screeningResult });
   } catch (err) {
-    return res.status(500).json({ status: 'error', message: err.message });
+    return res.status(500).json({ status: 'error', message: 'Failed to run peer screening.', details: err.message });
   }
 };
 

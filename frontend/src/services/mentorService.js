@@ -33,6 +33,24 @@ export async function updateMyMentorProfile(profileData) {
   return data.profile;
 }
 
+export async function uploadProfileImage(file) {
+  const formData = new FormData();
+  formData.append('image', file);
+
+  const token = localStorage.getItem('mentorconnect_token');
+  const headers = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const response = await fetch(`${API_BASE_URL}/mentors/me/profile-image`, {
+    method: 'POST',
+    headers,
+    body: formData
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to upload profile image');
+  return data.profileImage;
+}
+
 export async function fetchAvailableMentors(searchParams = {}) {
   const query = new URLSearchParams();
   if (searchParams.search) query.append('search', searchParams.search);
@@ -40,7 +58,7 @@ export async function fetchAvailableMentors(searchParams = {}) {
   if (searchParams.minFee) query.append('minFee', searchParams.minFee);
   if (searchParams.maxFee) query.append('maxFee', searchParams.maxFee);
   if (searchParams.mentorType) query.append('mentorType', searchParams.mentorType);
-  
+
   const url = `${API_BASE_URL}/mentors?${query.toString()}`;
   const response = await fetch(url, {
     method: 'GET',
@@ -80,6 +98,31 @@ export async function fetchMentorById(id) {
   const data = await response.json();
   if (!response.ok) throw new Error(data.message || 'Failed to fetch mentor');
   return data.profile;
+}
+
+export async function fetchVerificationRequests() {
+  const response = await fetch(`${API_BASE_URL}/mentors/me/verification-requests`, {
+    method: 'GET',
+    headers: getAuthHeaders()
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to fetch verification requests');
+  return data.requests;
+}
+
+export async function createVerificationRequest(formData) {
+  const token = localStorage.getItem('mentorconnect_token');
+  const headers = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const response = await fetch(`${API_BASE_URL}/mentors/me/verification-requests`, {
+    method: 'POST',
+    headers,
+    body: formData
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to submit verification request');
+  return data.request;
 }
 
 // ========================

@@ -38,8 +38,8 @@ export const AuthProvider = ({ children }) => {
     return res.user;
   };
 
-  const register = async (name, email, password, role, dateOfBirth) => {
-    const res = await registerUser(name, email, password, role, dateOfBirth);
+  const register = async (name, email, password, role, dateOfBirth, goal) => {
+    const res = await registerUser(name, email, password, role, dateOfBirth, goal);
     localStorage.setItem('mentorconnect_token', res.token);
     setToken(res.token);
     setUser(res.user);
@@ -50,10 +50,24 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('mentorconnect_token');
     setToken(null);
     setUser(null);
+    window.location.href = '/login';
+  };
+
+  const refreshUser = async () => {
+    const savedToken = localStorage.getItem('mentorconnect_token');
+    if (savedToken) {
+      try {
+        const res = await getMe(savedToken);
+        setUser(res.user);
+        return res.user;
+      } catch (err) {
+        console.warn('[AuthContext] Failed to refresh user:', err.message);
+      }
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout, isAuthenticated: !!user }}>
+    <AuthContext.Provider value={{ user, token, loading, login, register, logout, refreshUser, isAuthenticated: !!user }}>
       {children}
     </AuthContext.Provider>
   );

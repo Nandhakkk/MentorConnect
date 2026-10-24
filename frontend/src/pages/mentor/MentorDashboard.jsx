@@ -49,16 +49,22 @@ export default function MentorDashboard() {
       </div>
 
       {!loading && !isReady && (
-        <div className="glass-card" style={{ marginBottom: '2rem', borderLeft: '4px solid #ef4444' }}>
+        <div className="glass-card" style={{ marginBottom: '2rem', borderLeft: '4px solid var(--error)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <div style={{ padding: '0.75rem', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '50%', color: '#ef4444' }}>
+            <div style={{ padding: '0.75rem', background: 'var(--error-bg)', borderRadius: '50%', color: 'var(--error)' }}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             </div>
             <div>
-              <h3 style={{ margin: '0 0 0.25rem 0', color: 'white' }}>Action Required: Mentor Profile Readiness</h3>
-              <p style={{ margin: 0, color: 'var(--text-secondary)' }}>
-                Your profile is not discoverable yet. Please ensure you have completed your <Link to="/mentor/profile" style={{color: 'var(--accent-primary)'}}>Profile fields</Link> (Bio, Expertise, Session Fee, Topics) and set your <Link to="/mentor/availability" style={{color: 'var(--accent-primary)'}}>Availability</Link>.
-              </p>
+              <h3 style={{ margin: '0 0 0.25rem 0', color: 'var(--text-primary)' }}>Action Required: Mentor Profile Readiness</h3>
+              {user?.mentorProfile?.mentorType === 'PROFESSIONAL' && user?.mentorProfile?.status !== 'APPROVED' ? (
+                <p style={{ margin: 0, color: 'var(--text-secondary)' }}>
+                  Your profile is not discoverable yet. Please complete your <Link to="/mentor/application" style={{color: 'var(--accent-primary)'}}>Professional Mentor Application / Verification</Link> and await admin approval.
+                </p>
+              ) : (
+                <p style={{ margin: 0, color: 'var(--text-secondary)' }}>
+                  Your profile is not discoverable yet. Please ensure you have completed your <Link to="/mentor/profile" style={{color: 'var(--accent-primary)'}}>Profile fields</Link> (Bio, Expertise, Session Fee, Topics) and set your <Link to="/mentor/availability" style={{color: 'var(--accent-primary)'}}>Availability</Link>.
+                </p>
+              )}
             </div>
           </div>
         </div>

@@ -51,7 +51,7 @@ export default function ReviewAssignment() {
   };
 
   if (loading) return <div className="page-content">Loading...</div>;
-  if (error || !assignment) return <div className="page-content" style={{ color: '#ef4444' }}>{error || 'Not found'}</div>;
+  if (error || !assignment) return <div className="page-content" style={{ color: 'var(--error)' }}>{error || 'Not found'}</div>;
 
   const latestSubmission = assignment.submissions?.[0];
 
@@ -61,10 +61,10 @@ export default function ReviewAssignment() {
       
       <div className="glass-card" style={{ padding: '2rem', marginBottom: '2rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-          <h2 style={{ margin: 0, color: 'white' }}>{assignment.title}</h2>
+          <h2 style={{ margin: 0, color: 'var(--text-primary)' }}>{assignment.title}</h2>
           <span style={{
             padding: '0.25rem 0.75rem', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold',
-            background: 'rgba(255,255,255,0.1)', color: 'white'
+            background: 'var(--bg-surface-elevated)', color: 'var(--text-secondary)', border: '1px solid var(--border-subtle)'
           }}>
             Status: {assignment.status}
           </span>
@@ -75,17 +75,17 @@ export default function ReviewAssignment() {
           Due: <strong>{assignment.dueDate ? new Date(assignment.dueDate).toLocaleString() : 'No due date'}</strong>
         </p>
 
-        <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1.5rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
+        <div style={{ background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-subtle)', padding: '1.5rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
           <h4 style={{ margin: '0 0 1rem 0', color: 'var(--text-muted)' }}>Original Instructions</h4>
           <p style={{ margin: 0, whiteSpace: 'pre-wrap', color: 'var(--text-secondary)' }}>{assignment.description}</p>
           
           {assignment.referenceFiles && assignment.referenceFiles.length > 0 && (
             <div style={{ marginTop: '1rem' }}>
               <h5 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-secondary)' }}>Reference Files:</h5>
-              <ul style={{ margin: 0, paddingLeft: '1.5rem', color: 'white' }}>
+              <ul style={{ margin: 0, paddingLeft: '1.5rem', color: 'var(--text-primary)' }}>
                 {assignment.referenceFiles.map(f => (
                   <li key={f.id} style={{ marginBottom: '0.25rem' }}>
-                    <button onClick={() => downloadFile(f.id)} style={{ background: 'none', border: 'none', color: '#6366f1', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>
+                    <button onClick={() => downloadFile(f.id)} style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>
                       {f.originalName}
                     </button>
                     <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginLeft: '0.5rem' }}>
@@ -99,12 +99,12 @@ export default function ReviewAssignment() {
         </div>
         
         {latestSubmission ? (
-          <div style={{ borderLeft: '4px solid #10b981', paddingLeft: '1.5rem', marginBottom: '1.5rem' }}>
-            <h4 style={{ margin: '0 0 1rem 0', color: 'white' }}>Student's Submission</h4>
+          <div style={{ borderLeft: '4px solid var(--success)', paddingLeft: '1.5rem', marginBottom: '1.5rem' }}>
+            <h4 style={{ margin: '0 0 1rem 0', color: 'var(--text-primary)' }}>Student's Submission</h4>
             <p style={{ margin: 0, whiteSpace: 'pre-wrap', color: 'var(--text-primary)', marginBottom: '1rem' }}>{latestSubmission.content}</p>
             {latestSubmission.fileReference && (
               <div style={{ marginBottom: '1rem' }}>
-                <a href={latestSubmission.fileReference} target="_blank" rel="noopener noreferrer" style={{ color: '#6366f1' }}>
+                <a href={latestSubmission.fileReference} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-primary)' }}>
                   Submission Link
                 </a>
               </div>
@@ -113,10 +113,10 @@ export default function ReviewAssignment() {
             {latestSubmission.submissionFiles && latestSubmission.submissionFiles.length > 0 && (
               <div style={{ marginBottom: '1rem' }}>
                 <h5 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-secondary)' }}>Attached Files:</h5>
-                <ul style={{ margin: 0, paddingLeft: '1.5rem', color: 'white' }}>
+                <ul style={{ margin: 0, paddingLeft: '1.5rem', color: 'var(--text-primary)' }}>
                   {latestSubmission.submissionFiles.map(f => (
                     <li key={f.id} style={{ marginBottom: '0.25rem' }}>
-                      <button onClick={() => downloadFile(f.id)} style={{ background: 'none', border: 'none', color: '#6366f1', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>
+                      <button onClick={() => downloadFile(f.id)} style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>
                         {f.originalName}
                       </button>
                     </li>
@@ -127,37 +127,38 @@ export default function ReviewAssignment() {
 
             <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
               Submitted at: {new Date(latestSubmission.submittedAt).toLocaleString()} 
-              {latestSubmission.status === 'LATE' && <span style={{ color: '#ef4444', marginLeft: '0.5rem' }}>(LATE)</span>}
+              {latestSubmission.status === 'LATE' && <span style={{ color: 'var(--error)', marginLeft: '0.5rem' }}>(LATE)</span>}
             </div>
           </div>
         ) : (
-          <div style={{ padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', color: 'var(--text-muted)', textAlign: 'center' }}>
+          <div style={{ padding: '1rem', background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-subtle)', borderRadius: '8px', color: 'var(--text-muted)', textAlign: 'center' }}>
             The student has not submitted any work yet.
           </div>
         )}
 
         {assignment.status === 'SUBMITTED' && latestSubmission && (
-          <div style={{ marginTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '2rem' }}>
-            <h3 style={{ margin: '0 0 1rem 0' }}>Provide Feedback</h3>
+          <div style={{ marginTop: '2rem', borderTop: '1px solid var(--border-subtle)', paddingTop: '2rem' }}>
+            <h3 style={{ margin: '0 0 1rem 0', color: 'var(--text-primary)' }}>Provide Feedback</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
                 <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Your Feedback (Required)</label>
                 <textarea 
+                  className="form-input"
                   value={feedback}
                   onChange={e => setFeedback(e.target.value)}
                   rows="4"
-                  style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white', resize: 'vertical' }}
+                  style={{ resize: 'vertical' }}
                   placeholder="Provide constructive feedback..."
                 ></textarea>
               </div>
               
-              {actionError && <div style={{ color: '#ef4444' }}>{actionError}</div>}
+              {actionError && <div style={{ color: 'var(--error)' }}>{actionError}</div>}
               
               <div style={{ display: 'flex', gap: '1rem' }}>
-                <button onClick={() => handleReview('REVIEW')} className="btn btn-primary" style={{ background: '#10b981', color: 'white', border: 'none' }}>
+                <button onClick={() => handleReview('REVIEW')} className="btn btn-primary">
                   Accept & Mark Reviewed
                 </button>
-                <button onClick={() => handleReview('RETURN')} className="btn" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+                <button onClick={() => handleReview('RETURN')} className="btn" style={{ background: 'var(--error-bg)', color: 'var(--error)', border: '1px solid var(--border-subtle)' }}>
                   Return for Revision
                 </button>
               </div>

@@ -22,7 +22,7 @@ export default function MentorAssignments() {
   }, []);
 
   if (loading) return <div className="page-content">Loading assignments...</div>;
-  if (error) return <div className="page-content" style={{ color: '#ef4444' }}>{error}</div>;
+  if (error) return <div className="page-content" style={{ color: 'var(--error)' }}>{error}</div>;
 
   return (
     <div className="page-content">
@@ -43,11 +43,12 @@ export default function MentorAssignments() {
           {assignments.map(a => (
             <div key={a.id} className="glass-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <h4 style={{ margin: 0, color: 'white', fontSize: '1.2rem' }}>{a.title}</h4>
+                <h4 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '1.2rem' }}>{a.title}</h4>
                 <span style={{
                   padding: '0.2rem 0.6rem', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold',
-                  background: a.status === 'ASSIGNED' ? 'rgba(255, 255, 255, 0.1)' : a.status === 'SUBMITTED' ? 'rgba(234, 179, 8, 0.1)' : 'rgba(16, 185, 129, 0.1)',
-                  color: a.status === 'ASSIGNED' ? 'white' : a.status === 'SUBMITTED' ? '#eab308' : '#10b981'
+                  background: a.status === 'ASSIGNED' ? 'var(--info-bg)' : a.status === 'SUBMITTED' ? 'var(--warning-bg)' : 'var(--success-bg)',
+                  color: a.status === 'ASSIGNED' ? 'var(--info)' : a.status === 'SUBMITTED' ? 'var(--warning)' : 'var(--success)',
+                  border: '1px solid var(--border-subtle)'
                 }}>
                   {a.status === 'SUBMITTED' ? 'NEEDS REVIEW' : a.status}
                 </span>
@@ -59,7 +60,7 @@ export default function MentorAssignments() {
                 </p>
               )}
               <div style={{ marginTop: 'auto', paddingTop: '1rem' }}>
-                <Link to={`/mentor/assignments/${a.id}/review`} className="btn btn-primary" style={{ display: 'block', textAlign: 'center', textDecoration: 'none', background: a.status === 'SUBMITTED' ? '#eab308' : 'var(--accent-primary)', color: a.status === 'SUBMITTED' ? 'black' : 'white' }}>
+                <Link to={`/mentor/assignments/${a.id}/review`} className="btn btn-primary" style={{ display: 'block', textAlign: 'center', textDecoration: 'none', background: a.status === 'SUBMITTED' ? 'var(--warning)' : 'var(--accent-primary)', color: '#FFFFFF' }}>
                   {a.status === 'SUBMITTED' ? 'Review Submission' : 'View Details'}
                 </Link>
               </div>

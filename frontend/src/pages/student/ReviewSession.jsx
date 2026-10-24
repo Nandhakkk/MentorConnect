@@ -49,14 +49,14 @@ export default function ReviewSession() {
     <div className="page-content">
       <BackLink to="/student/sessions" label="Back to Sessions" />
       <div className="glass-card" style={{ padding: '2rem', maxWidth: '600px', margin: '0 auto' }}>
-        <h2 style={{ marginTop: 0, marginBottom: '1.5rem', color: 'white' }}>Rate Your Mentor</h2>
+        <h2 style={{ marginTop: 0, marginBottom: '1.5rem', color: 'var(--text-primary)' }}>Rate Your Mentor</h2>
         
         {existingReview ? (
           <div>
-            <div style={{ padding: '1rem', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid #10b981', borderRadius: '8px', marginBottom: '1.5rem' }}>
-              <h4 style={{ margin: '0 0 0.5rem 0', color: '#10b981' }}>You have already reviewed this session.</h4>
+            <div style={{ padding: '1rem', background: 'var(--success-subtle)', border: '1px solid var(--success)', borderRadius: '8px', marginBottom: '1.5rem' }}>
+              <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--success)' }}>You have already reviewed this session.</h4>
               <RatingStars rating={existingReview.rating} readOnly={true} />
-              <p style={{ marginTop: '1rem', whiteSpace: 'pre-wrap', color: 'white' }}>{existingReview.comment}</p>
+              <p style={{ marginTop: '1rem', whiteSpace: 'pre-wrap', color: 'var(--text-primary)' }}>{existingReview.comment}</p>
             </div>
           </div>
         ) : (
@@ -71,12 +71,13 @@ export default function ReviewSession() {
                 value={comment}
                 onChange={e => setComment(e.target.value)}
                 rows="5"
-                style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white', resize: 'vertical' }}
+                className="form-input"
+                style={{ resize: 'vertical' }}
                 placeholder="How was the session? Was the mentor helpful?"
               ></textarea>
             </div>
             
-            {error && <div style={{ color: '#ef4444' }}>{error}</div>}
+            {error && <div style={{ color: 'var(--error)' }}>{error}</div>}
             
             <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start' }}>
               Submit Review

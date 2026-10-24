@@ -38,7 +38,7 @@ export default function ReportSession() {
     <div className="page-content">
       <BackLink to="#" onClick={(e) => { e.preventDefault(); navigate(-1); }} label="Back to Sessions" />
       <div className="glass-card" style={{ padding: '2rem', maxWidth: '600px', margin: '0 auto' }}>
-        <h2 style={{ marginTop: 0, marginBottom: '1.5rem', color: 'white' }}>Report an Issue</h2>
+        <h2 style={{ marginTop: 0, marginBottom: '1.5rem', color: 'var(--text-primary)' }}>Report an Issue</h2>
         
         <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
           Please provide details about the issue you experienced during this session.
@@ -46,7 +46,7 @@ export default function ReportSession() {
         </p>
 
         {success ? (
-          <div style={{ padding: '1rem', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid #10b981', borderRadius: '8px', color: '#10b981' }}>
+          <div style={{ padding: '1rem', background: 'var(--success-subtle)', border: '1px solid var(--success)', borderRadius: '8px', color: 'var(--success)' }}>
             {success}
           </div>
         ) : (
@@ -56,7 +56,7 @@ export default function ReportSession() {
               <select 
                 value={category} 
                 onChange={e => setCategory(e.target.value)}
-                style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
+                className="form-input"
               >
                 <option value="INAPPROPRIATE_BEHAVIOR">Inappropriate Behavior</option>
                 <option value="NO_SHOW">No Show</option>
@@ -71,16 +71,17 @@ export default function ReportSession() {
                 value={description}
                 onChange={e => setDescription(e.target.value)}
                 rows="6"
-                style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white', resize: 'vertical' }}
+                className="form-input"
+                style={{ resize: 'vertical' }}
                 placeholder="Please describe what happened in detail..."
                 required
               ></textarea>
               <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Minimum 10 characters</div>
             </div>
             
-            {error && <div style={{ color: '#ef4444' }}>{error}</div>}
+            {error && <div style={{ color: 'var(--error)' }}>{error}</div>}
             
-            <button type="submit" disabled={loading} className="btn btn-primary" style={{ alignSelf: 'flex-start', background: '#ef4444' }}>
+            <button type="submit" disabled={loading} className="btn" style={{ alignSelf: 'flex-start', background: 'var(--error)', color: '#ffffff', padding: '0.65rem 1.5rem' }}>
               {loading ? 'Submitting...' : 'Submit Report'}
             </button>
           </form>

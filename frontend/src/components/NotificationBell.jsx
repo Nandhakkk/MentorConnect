@@ -1,7 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getNotifications, markNotificationRead, markAllNotificationsRead } from '../services/notificationService';
+import { useAuth } from '../context/AuthContext';
+import { getNotificationDestination } from '../utils/notificationNavigation';
 
 export default function NotificationBell() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -37,12 +42,24 @@ export default function NotificationBell() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showDropdown]);
 
-  const handleMarkRead = async (id) => {
-    try {
-      await markNotificationRead(id);
-      fetchNotifs();
-    } catch (err) {
-      console.error(err);
+  const handleNotificationClick = async (notif) => {
+    // 1. Close dropdown
+    setShowDropdown(false);
+
+    // 2. Mark as read if unread
+    if (!notif.isRead) {
+      try {
+        await markNotificationRead(notif.id);
+        fetchNotifs();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // 3. Navigate
+    const destination = getNotificationDestination(notif, user);
+    if (destination) {
+      navigate(destination);
     }
   };
 
@@ -100,19 +117,19 @@ export default function NotificationBell() {
           width: '320px',
           maxHeight: '400px',
           overflowY: 'auto',
-          background: '#1f2937',
-          border: '1px solid rgba(255,255,255,0.1)',
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border-subtle)',
           borderRadius: '8px',
-          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)',
+          boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.25)',
           zIndex: 50,
           marginTop: '0.5rem',
           display: 'flex',
           flexDirection: 'column'
         }}>
-          <div style={{ padding: '1rem', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h4 style={{ margin: 0, color: 'white' }}>Notifications</h4>
+          <div style={{ padding: '1rem', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h4 style={{ margin: 0, color: 'var(--text-primary)' }}>Notifications</h4>
             {unreadCount > 0 && (
-              <button onClick={handleMarkAllRead} style={{ background: 'transparent', border: 'none', color: '#6366f1', fontSize: '0.85rem', cursor: 'pointer' }}>
+              <button onClick={handleMarkAllRead} style={{ background: 'transparent', border: 'none', color: 'var(--accent-primary)', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}>
                 Mark all read
               </button>
             )}
@@ -127,19 +144,22 @@ export default function NotificationBell() {
               notifications.map(notif => (
                 <div 
                   key={notif.id} 
-                  onClick={() => !notif.isRead && handleMarkRead(notif.id)}
+                  onClick={() => handleNotificationClick(notif)}
                   style={{
                     padding: '0.75rem',
                     borderRadius: '6px',
                     marginBottom: '0.5rem',
-                    background: notif.isRead ? 'transparent' : 'rgba(99, 102, 241, 0.1)',
-                    cursor: notif.isRead ? 'default' : 'pointer',
-                    transition: 'background 0.2s'
+                    background: notif.isRead ? 'transparent' : 'var(--info-bg)',
+                    cursor: 'pointer',
+                    transition: 'background 0.2s',
+                    position: 'relative',
+                    border: notif.isRead ? '1px solid transparent' : '1px solid var(--info-border)'
                   }}
+                  className="notification-item-hover"
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                    <strong style={{ color: notif.isRead ? 'var(--text-primary)' : 'white', fontSize: '0.9rem' }}>{notif.title}</strong>
-                    {!notif.isRead && <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#6366f1', display: 'inline-block' }}></span>}
+                    <strong style={{ color: 'var(--text-primary)', fontSize: '0.9rem' }}>{notif.title}</strong>
+                    {!notif.isRead && <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent-primary)', display: 'inline-block' }}></span>}
                   </div>
                   <p style={{ margin: '0 0 0.25rem 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{notif.message}</p>
                   <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{new Date(notif.createdAt).toLocaleDateString()} {new Date(notif.createdAt).toLocaleTimeString([], {timeStyle: 'short'})}</span>

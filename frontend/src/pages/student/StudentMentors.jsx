@@ -49,11 +49,11 @@ export default function StudentMentors() {
       </div>
 
       <div className="stats-grid stats-grid-4">
-        <DashboardCard 
-          title="Active Mentorships" 
-          value={activeMentorships.toString()} 
-          subtitle="Current connections" 
-          color="#10b981"
+        <DashboardCard
+          title="Active Mentorships"
+          value={activeMentorships.toString()}
+          subtitle="Current connections"
+          color="var(--success)"
           icon={
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
@@ -74,9 +74,9 @@ export default function StudentMentors() {
             <div key={m.id} className="glass-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                  <div style={{ 
-                    width: '40px', height: '40px', borderRadius: '50%', background: 'var(--accent-primary)', 
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold' 
+                  <div style={{
+                    width: '40px', height: '40px', borderRadius: '50%', background: 'var(--accent-primary)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold'
                   }}>
                     {m.mentor?.user?.name?.charAt(0).toUpperCase()}
                   </div>
@@ -85,15 +85,16 @@ export default function StudentMentors() {
                     <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{m.mentor?.expertise || 'Mentor'}</div>
                   </div>
                 </div>
-                <span style={{ 
-                  fontSize: '0.75rem', padding: '0.2rem 0.5rem', borderRadius: '12px', 
-                  background: m.status === 'ACTIVE' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(107, 114, 128, 0.1)',
-                  color: m.status === 'ACTIVE' ? '#10b981' : '#9ca3af' 
+                <span style={{
+                  fontSize: '0.75rem', padding: '0.2rem 0.5rem', borderRadius: '12px',
+                  background: m.status === 'ACTIVE' ? 'var(--success-subtle)' : 'var(--bg-surface-elevated)',
+                  color: m.status === 'ACTIVE' ? 'var(--success)' : 'var(--text-muted)',
+                  border: '1px solid var(--border-subtle)'
                 }}>
                   {m.status}
                 </span>
               </div>
-              
+
               <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
                 {m.status === 'PENDING' ? 'Requested' : 'Started'}: {new Date(m.status === 'ACTIVE' && m.startedAt ? m.startedAt : m.createdAt).toLocaleDateString()}
               </div>
@@ -104,7 +105,7 @@ export default function StudentMentors() {
                     Book Session
                   </Link>
                 )}
-                <button onClick={() => handleCancel(m.id)} style={{ flex: 1, padding: '0.5rem', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '4px', cursor: 'pointer' }}>
+                <button onClick={() => handleCancel(m.id)} style={{ flex: 1, padding: '0.5rem', background: 'var(--error-subtle)', color: 'var(--error)', border: '1px solid var(--error)', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}>
                   {m.status === 'PENDING' ? 'Cancel Request' : 'Cancel Mentorship'}
                 </button>
               </div>
@@ -126,12 +127,12 @@ export default function StudentMentors() {
           </div>
         ) : (
           mentorships.filter(m => m.status === 'CANCELLED' || m.status === 'COMPLETED').map(m => (
-            <div key={m.id} className="glass-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', opacity: 0.8 }}>
+            <div key={m.id} className="glass-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                  <div style={{ 
-                    width: '40px', height: '40px', borderRadius: '50%', background: 'var(--text-muted)', 
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold' 
+                  <div style={{
+                    width: '40px', height: '40px', borderRadius: '50%', background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-subtle)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontWeight: 'bold'
                   }}>
                     {m.mentor?.user?.name?.charAt(0).toUpperCase()}
                   </div>
@@ -140,9 +141,10 @@ export default function StudentMentors() {
                     <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{m.mentor?.expertise || 'Mentor'}</div>
                   </div>
                 </div>
-                <span style={{ 
-                  fontSize: '0.75rem', padding: '0.2rem 0.5rem', borderRadius: '12px', 
-                  background: 'rgba(107, 114, 128, 0.1)', color: '#9ca3af' 
+                <span style={{
+                  fontSize: '0.75rem', padding: '0.2rem 0.5rem', borderRadius: '12px',
+                  background: 'var(--bg-surface-elevated)', color: 'var(--text-muted)',
+                  border: '1px solid var(--border-subtle)'
                 }}>
                   {m.status}
                 </span>

@@ -22,7 +22,7 @@ export default function StudentAssignments() {
   }, []);
 
   if (loading) return <div className="page-content">Loading assignments...</div>;
-  if (error) return <div className="page-content" style={{ color: '#ef4444' }}>{error}</div>;
+  if (error) return <div className="page-content" style={{ color: 'var(--error)' }}>{error}</div>;
 
   return (
     <div className="page-content">
@@ -40,18 +40,19 @@ export default function StudentAssignments() {
           {assignments.map(a => (
             <div key={a.id} className="glass-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <h4 style={{ margin: 0, color: 'white', fontSize: '1.2rem' }}>{a.title}</h4>
+                <h4 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '1.2rem' }}>{a.title}</h4>
                 <span style={{
                   padding: '0.2rem 0.6rem', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold',
-                  background: a.status === 'ASSIGNED' ? 'rgba(59, 130, 246, 0.1)' : a.status === 'SUBMITTED' ? 'rgba(16, 185, 129, 0.1)' : a.status === 'RETURNED' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(167, 139, 250, 0.1)',
-                  color: a.status === 'ASSIGNED' ? '#3b82f6' : a.status === 'SUBMITTED' ? '#10b981' : a.status === 'RETURNED' ? '#ef4444' : '#a78bfa'
+                  background: a.status === 'ASSIGNED' ? 'var(--info-bg)' : a.status === 'SUBMITTED' ? 'var(--success-bg)' : a.status === 'RETURNED' ? 'var(--error-bg)' : 'var(--purple-bg)',
+                  color: a.status === 'ASSIGNED' ? 'var(--info)' : a.status === 'SUBMITTED' ? 'var(--success)' : a.status === 'RETURNED' ? 'var(--error)' : 'var(--purple)',
+                  border: '1px solid var(--border-subtle)'
                 }}>
                   {a.status}
                 </span>
               </div>
               <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Mentor: {a.mentor?.user?.name}</p>
               {a.dueDate && (
-                <p style={{ margin: 0, fontSize: '0.85rem', color: new Date(a.dueDate) < new Date() && a.status === 'ASSIGNED' ? '#ef4444' : 'var(--text-muted)' }}>
+                <p style={{ margin: 0, fontSize: '0.85rem', color: new Date(a.dueDate) < new Date() && a.status === 'ASSIGNED' ? 'var(--error)' : 'var(--text-muted)' }}>
                   Due: {new Date(a.dueDate).toLocaleDateString()}
                 </p>
               )}

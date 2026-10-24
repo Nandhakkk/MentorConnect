@@ -128,11 +128,11 @@ export default function MentorAvailability() {
           <h3 style={{ marginTop: 0, marginBottom: '1.5rem', color: 'var(--text-primary)' }}>Add Time Slot</h3>
           <form onSubmit={handleAddSlot}>
             <div style={{ marginBottom: '1rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Day of Week</label>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Day of Week</label>
               <select 
                 value={newSlot.dayOfWeek} 
                 onChange={e => setNewSlot({...newSlot, dayOfWeek: e.target.value})}
-                style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
+                className="form-input"
               >
                 {DAYS_OF_WEEK.map(day => (
                   <option key={day} value={day}>{day}</option>
@@ -140,23 +140,23 @@ export default function MentorAvailability() {
               </select>
             </div>
             <div style={{ marginBottom: '1rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Start Time</label>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Start Time</label>
               <input 
                 type="time" 
                 value={newSlot.startTime} 
                 onChange={e => setNewSlot({...newSlot, startTime: e.target.value})}
                 required
-                style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
+                className="form-input"
               />
             </div>
             <div style={{ marginBottom: '1.5rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>End Time</label>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>End Time</label>
               <input 
                 type="time" 
                 value={newSlot.endTime} 
                 onChange={e => setNewSlot({...newSlot, endTime: e.target.value})}
                 required
-                style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
+                className="form-input"
               />
             </div>
             <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '0.75rem' }}>
@@ -169,7 +169,7 @@ export default function MentorAvailability() {
         <div className="glass-card" style={{ padding: '1.5rem' }}>
           <h3 style={{ marginTop: 0, marginBottom: '1.5rem', color: 'var(--text-primary)' }}>Your Weekly Schedule</h3>
           
-          {error && <div style={{ color: '#ef4444', marginBottom: '1rem' }}>{error}</div>}
+          {error && <div style={{ color: 'var(--error)', marginBottom: '1rem' }}>{error}</div>}
           
           {availabilities.length === 0 ? (
             <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
@@ -182,17 +182,17 @@ export default function MentorAvailability() {
                 if (daySlots.length === 0) return null;
                 
                 return (
-                  <div key={day} style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '1rem' }}>
+                  <div key={day} style={{ background: 'var(--bg-surface-elevated)', borderRadius: '8px', padding: '1rem', border: '1px solid var(--border-subtle)' }}>
                     <h4 style={{ margin: '0 0 1rem 0', color: 'var(--accent-primary)' }}>{day}</h4>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                       {daySlots.map(slot => (
-                        <div key={slot.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem', background: 'rgba(0,0,0,0.2)', borderRadius: '4px' }}>
-                          <span style={{ fontFamily: 'monospace', fontSize: '1.1rem' }}>
+                        <div key={slot.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.75rem', background: 'var(--bg-card)', borderRadius: '4px', border: '1px solid var(--border-subtle)' }}>
+                          <span style={{ fontFamily: 'monospace', fontSize: '1.1rem', color: 'var(--text-primary)' }}>
                             {slot.startTime} - {slot.endTime}
                           </span>
                           <button 
                             onClick={() => handleDeleteSlot(slot.id)}
-                            style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', opacity: 0.7 }}
+                            style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem' }}
                           >
                             Remove
                           </button>

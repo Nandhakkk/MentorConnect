@@ -6,7 +6,10 @@ export async function getMyApplication(token) {
   });
   const data = await response.json();
   if (response.status === 404) return null; // No application found
-  if (!response.ok) throw new Error(data.message || 'Failed to fetch mentor application.');
+  if (!response.ok) {
+    const detailMsg = data.details ? `: ${data.details}` : '';
+    throw new Error(`${data.message || 'Failed to fetch mentor application.'}${detailMsg}`);
+  }
   return data.application;
 }
 
@@ -20,7 +23,10 @@ export async function createApplication(applicationData, token) {
     body: JSON.stringify(applicationData)
   });
   const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Failed to create mentor application.');
+  if (!response.ok) {
+    const detailMsg = data.details ? `: ${data.details}` : '';
+    throw new Error(`${data.message || 'Failed to create mentor application.'}${detailMsg}`);
+  }
   return data.application;
 }
 
@@ -34,7 +40,10 @@ export async function updateMyApplication(applicationData, token) {
     body: JSON.stringify(applicationData)
   });
   const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Failed to update mentor application.');
+  if (!response.ok) {
+    const detailMsg = data.details ? `: ${data.details}` : '';
+    throw new Error(`${data.message || 'Failed to update mentor application.'}${detailMsg}`);
+  }
   return data.application;
 }
 
@@ -46,7 +55,10 @@ export async function screenApplication(token) {
     }
   });
   const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Failed to run AI screening.');
+  if (!response.ok) {
+    const detailMsg = data.details ? `: ${data.details}` : '';
+    throw new Error(`${data.message || 'Failed to run AI screening.'}${detailMsg}`);
+  }
   return data.screeningResult;
 }
 

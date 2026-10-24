@@ -74,7 +74,7 @@ export default function MentorStudentsList() {
             type="button"
             disabled={actioningId === mentorship.id}
             onClick={() => handleRequestAction(mentorship.id, 'reject')}
-            style={{ padding: '0.65rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid #ef4444', background: 'transparent', color: '#f87171', cursor: actioningId === mentorship.id ? 'not-allowed' : 'pointer', fontWeight: 600 }}
+            style={{ padding: '0.65rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--error)', background: 'transparent', color: 'var(--error)', cursor: actioningId === mentorship.id ? 'not-allowed' : 'pointer', fontWeight: 600 }}
           >
             Reject
           </button>
@@ -92,11 +92,11 @@ export default function MentorStudentsList() {
         </div>
       </div>
 
-      {error && <div style={{ color: '#ef4444', marginBottom: '1rem' }}>{error}</div>}
+      {error && <div style={{ color: 'var(--error)', marginBottom: '1rem' }}>{error}</div>}
 
       <div className="stats-grid stats-grid-4">
-        <DashboardCard title="Pending Requests" value={pendingRequests.length.toString()} subtitle="Awaiting your review" color="#f59e0b" icon="⏳" />
-        <DashboardCard title="Active Students" value={activeMentorships.length.toString()} subtitle="Currently enrolled" color="#10b981" icon="👩‍🎓" />
+        <DashboardCard title="Pending Requests" value={pendingRequests.length.toString()} subtitle="Awaiting your review" color="var(--warning)" icon="⏳" />
+        <DashboardCard title="Active Students" value={activeMentorships.length.toString()} subtitle="Currently enrolled" color="var(--success)" icon="👩‍🎓" />
       </div>
 
       <section style={{ marginBottom: '2.5rem' }}>

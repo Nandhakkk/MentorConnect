@@ -61,7 +61,7 @@ export default function GuardianDashboard() {
         </div>
       </div>
 
-      {error && <div style={{ color: '#ef4444', marginBottom: '1rem' }}>{error}</div>}
+      {error && <div style={{ color: 'var(--error)', marginBottom: '1rem' }}>{error}</div>}
 
       {learners.length === 0 && !loading ? (
         <div className="glass-card" style={{ padding: '3rem', textAlign: 'center' }}>
@@ -84,9 +84,9 @@ export default function GuardianDashboard() {
                     padding: '1rem',
                     textAlign: 'left',
                     borderRadius: 'var(--radius-md)',
-                    background: selectedLearner?.id === learner.id ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255,255,255,0.05)',
+                    background: selectedLearner?.id === learner.id ? 'var(--info-bg)' : 'var(--bg-surface-elevated)',
                     border: selectedLearner?.id === learner.id ? '1px solid var(--accent-primary)' : '1px solid var(--border-subtle)',
-                    color: 'white',
+                    color: selectedLearner?.id === learner.id ? 'var(--accent-primary)' : 'var(--text-primary)',
                     cursor: 'pointer'
                   }}
                 >
@@ -132,12 +132,12 @@ export default function GuardianDashboard() {
                       </thead>
                       <tbody>
                         {sessions.map(sess => (
-                          <tr key={sess.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                          <tr key={sess.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                             <td style={{ padding: '1rem 0' }}>{new Date(sess.scheduledAt).toLocaleString()} ({sess.duration}m)</td>
                             <td style={{ padding: '1rem 0' }}>{sess.mentorship.mentor.user.name}</td>
                             <td style={{ padding: '1rem 0' }}>
-                              <span className={`badge badge-${sess.status === 'SCHEDULED' ? 'primary' : 'secondary'}`}>
-                                {sess.status}
+                              <span className={`badge badge-${sess.status === 'SCHEDULED' ? 'info' : sess.status === 'COMPLETED' ? 'success' : sess.status === 'MISSED' ? 'warning' : 'danger'}`}>
+                                {sess.status === 'MISSED' ? 'MISSED / NO-SHOW' : sess.status}
                               </span>
                             </td>
                             <td style={{ padding: '1rem 0' }}>

@@ -13,7 +13,11 @@ export default function StudentDashboard() {
   useEffect(() => { Promise.all([fetchGoals(), fetchStudentMentorships(), fetchSessions()]).then(([goals, mentorships, sessions]) => setData({ goals, mentorships, sessions, loading: false })).catch(() => setData((current) => ({ ...current, loading: false }))); }, []);
   const activeGoals = data.goals.filter((goal) => goal.status === 'ACTIVE');
   const activeMentorship = data.mentorships.find((item) => item.status === 'ACTIVE');
-  const upcoming = data.sessions.filter((item) => item.status === 'SCHEDULED' && new Date(item.scheduledAt) >= new Date()).sort((a, b) => new Date(a.scheduledAt) - new Date(b.scheduledAt))[0];
+  const isSessionConfirmed = (item) => !item.payment || item.payment.amount === 0 || item.payment.status === 'PAID';
+  const upcoming = data.sessions.filter((item) => {
+    const sessionEnd = new Date(new Date(item.scheduledAt).getTime() + item.duration * 60000);
+    return item.status === 'SCHEDULED' && sessionEnd >= new Date() && isSessionConfirmed(item);
+  }).sort((a, b) => new Date(a.scheduledAt) - new Date(b.scheduledAt))[0];
   const count = (value) => data.loading ? '—' : value.toString();
 
   return <div className="page-content">
@@ -21,19 +25,27 @@ export default function StudentDashboard() {
     <div className="stats-grid">
       <DashboardCard title="Active goals" value={count(activeGoals.length)} subtitle="Goals currently in progress" icon="◎" />
       <DashboardCard title="Mentorships" value={count(data.mentorships.filter((item) => item.status === 'ACTIVE').length)} subtitle="Active mentor connections" icon="↔" color="#10b981" />
-      <DashboardCard title="Upcoming sessions" value={count(data.sessions.filter((item) => item.status === 'SCHEDULED' && new Date(item.scheduledAt) >= new Date()).length)} subtitle="Sessions on your calendar" icon="◷" color="#f59e0b" />
+      <DashboardCard title="Upcoming sessions" value={count(data.sessions.filter((item) => {
+        const sessionEnd = new Date(new Date(item.scheduledAt).getTime() + item.duration * 60000);
+        return item.status === 'SCHEDULED' && sessionEnd >= new Date() && isSessionConfirmed(item);
+      }).length)} subtitle="Sessions on your calendar" icon="◷" color="#f59e0b" />
     </div>
     <div className="dashboard-grid-2col">
-      <section className="glass-card"><h3 className="card-section-title">Your learning focus</h3>{activeGoals.length ? activeGoals.slice(0, 3).map((goal) => <Link key={goal.id} to={`/student/goals/${goal.id}`} className="quick-action-link"><span>◎</span><span>{goal.title}</span><span style={{ marginLeft: 'auto', color: 'var(--text-muted)' }}>{goal.milestones?.filter((m) => m.status === 'COMPLETED').length || 0}/{goal.milestones?.length || 0}</span></Link>) : <div className="empty-list-state"><p>Set a goal to create a focused learning plan.</p><Link className="btn btn-secondary" to="/student/goals">Browse goals</Link></div>}</section>
-      <section className="glass-card"><h3 className="card-section-title">Next step</h3>{upcoming ? <><h4>{new Date(upcoming.scheduledAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</h4><p style={{ margin: '.5rem 0 1rem' }}>Session with {upcoming.mentorship?.mentor?.user?.name || 'your mentor'}.</p><Link className="btn btn-secondary" to="/student/sessions">View sessions</Link></> : activeMentorship ? <><p style={{ marginBottom: '1rem' }}>You are connected with {activeMentorship.mentor?.user?.name || 'a mentor'}. Book time when you are ready.</p><Link className="btn btn-secondary" to="/student/sessions">Book a session</Link></> : <><p style={{ marginBottom: '1rem' }}>Find an approved mentor who can help you reach your goals.</p><Link className="btn btn-primary" to="/student/mentor">Find a mentor</Link></>}</section>
+      <section className="glass-card"><h3 className="card-section-title">Your learning focus</h3>{activeGoals.length ? activeGoals.slice(0, 3).map((goal) => <Link key={goal.id} to={`/student/goals/${goal.id}`} className="quick-action-link learning-focus-goal"><span>◎</span><span>{goal.title}</span><span style={{ marginLeft: 'auto', color: 'var(--text-muted)' }}>{goal.milestones?.filter((m) => m.status === 'COMPLETED').length || 0}/{goal.milestones?.length || 0}</span></Link>) : <div className="empty-list-state"><p>Set a goal to create a focused learning plan.</p><Link className="btn btn-action-goal" to="/student/goals">Browse goals</Link></div>}</section>
+      <section className="glass-card"><h3 className="card-section-title">Next step</h3>{upcoming ? <><h4>{new Date(upcoming.scheduledAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</h4><p style={{ margin: '.5rem 0 1rem' }}>Session with {upcoming.mentorship?.mentor?.user?.name || 'your mentor'}.</p><Link className="btn btn-action-book" to="/student/sessions">View sessions</Link></> : activeMentorship ? <><p style={{ marginBottom: '1rem' }}>You are connected with {activeMentorship.mentor?.user?.name || 'a mentor'}. Book time when you are ready.</p><Link className="btn btn-action-book" to="/student/sessions">Book a session</Link></> : <><p style={{ marginBottom: '1rem' }}>Find an approved mentor who can help you reach your goals.</p><Link className="btn btn-primary" to="/student/mentor">Find a mentor</Link></>}</section>
     </div>
     
     {user?.dateOfBirth && getAgeCategory(user.dateOfBirth) !== 'ADULT' && (
-      <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'rgba(245, 158, 11, 0.1)', borderLeft: '4px solid #f59e0b', borderRadius: '4px' }}>
-        <h4 style={{ margin: '0 0 0.5rem 0', color: '#f59e0b' }}>Safety Reminder</h4>
-        <p style={{ margin: 0, color: 'var(--text-secondary)' }}>
-          Please remember to never share personal contact information such as phone numbers or home addresses with your mentor. Report any uncomfortable interactions immediately.
-        </p>
+      <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'var(--info-bg)', borderLeft: '4px solid var(--info)', borderRadius: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+        <div>
+          <h4 style={{ margin: '0 0 0.25rem 0', color: 'var(--info)' }}>🛡️ Minor Safeguarding & Guardian Monitoring</h4>
+          <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+            Under-18 students must maintain verified guardian contact details. Never share personal contact information or home address with mentors.
+          </p>
+        </div>
+        <Link to="/student/profile" className="btn btn-secondary" style={{ fontSize: '0.8rem', padding: '6px 14px' }}>
+          Manage Guardian Setup
+        </Link>
       </div>
     )}
 

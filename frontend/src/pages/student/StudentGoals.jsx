@@ -59,7 +59,7 @@ export default function StudentGoals() {
         </button>
       </div>
 
-      {error && <div style={{ color: '#ef4444', marginBottom: '1rem' }}>{error}</div>}
+      {error && <div style={{ color: 'var(--error)', marginBottom: '1rem' }}>{error}</div>}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
         {goals.length === 0 ? (
@@ -81,8 +81,9 @@ export default function StudentGoals() {
                       fontSize: '0.75rem', 
                       padding: '0.2rem 0.5rem', 
                       borderRadius: '12px', 
-                      background: goal.status === 'ACTIVE' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(107, 114, 128, 0.1)',
-                      color: goal.status === 'ACTIVE' ? '#10b981' : '#9ca3af'
+                      background: goal.status === 'ACTIVE' ? 'var(--success-bg)' : 'var(--bg-surface-elevated)',
+                      color: goal.status === 'ACTIVE' ? 'var(--success)' : 'var(--text-muted)',
+                      border: '1px solid var(--border-subtle)'
                     }}>
                       {goal.status}
                     </span>
@@ -99,7 +100,7 @@ export default function StudentGoals() {
                       <span>Progress: {completed} / {total} milestones</span>
                       <span>{progress}%</span>
                     </div>
-                    <div style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
+                    <div style={{ width: '100%', height: '6px', background: 'var(--border-subtle)', borderRadius: '3px', overflow: 'hidden' }}>
                       <div style={{ height: '100%', width: `${progress}%`, background: 'var(--accent-primary)', transition: 'width 0.3s ease' }}></div>
                     </div>
                   </div>
@@ -122,38 +123,38 @@ export default function StudentGoals() {
           background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100
         }}>
           <div className="glass-card" style={{ width: '100%', maxWidth: '400px', padding: '2rem' }}>
-            <h3 style={{ margin: '0 0 1.5rem 0' }}>Create New Goal</h3>
+            <h3 style={{ margin: '0 0 1.5rem 0', color: 'var(--text-primary)' }}>Create New Goal</h3>
             <form onSubmit={handleCreate}>
               <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Goal Title *</label>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Goal Title *</label>
                 <input 
                   type="text" 
+                  className="form-input"
                   value={newGoal.title} 
                   onChange={e => setNewGoal({...newGoal, title: e.target.value})}
                   required 
-                  style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
                 />
               </div>
               <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Description</label>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Description</label>
                 <textarea 
+                  className="form-input"
                   value={newGoal.description} 
                   onChange={e => setNewGoal({...newGoal, description: e.target.value})}
                   rows="3"
-                  style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
                 />
               </div>
               <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Target Date</label>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Target Date</label>
                 <input 
                   type="date" 
+                  className="form-input"
                   value={newGoal.targetDate} 
                   onChange={e => setNewGoal({...newGoal, targetDate: e.target.value})}
-                  style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
                 />
               </div>
               <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
-                <button type="button" onClick={() => setShowModal(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>Cancel</button>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
                 <button type="submit" className="btn btn-primary" disabled={creating}>
                   {creating ? 'Creating...' : 'Create Goal'}
                 </button>

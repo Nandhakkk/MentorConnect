@@ -6,16 +6,8 @@ export default function Landing() {
 
   if (loading) return null;
 
-  // Redirect authenticated users
-  if (user) {
-    if (user.role === 'ADMIN') return <Navigate to="/admin/dashboard" replace />;
-    if (user.role === 'GUARDIAN') return <Navigate to="/guardian/dashboard" replace />;
-    if (user.role === 'MENTOR') return <Navigate to="/mentor/dashboard" replace />;
-    if (user.role === 'STUDENT') {
-      if (!user.studentProfile) return <Navigate to="/student/onboarding" replace />;
-      return <Navigate to="/student/dashboard" replace />;
-    }
-  }
+  // Authenticated users no longer automatically redirect.
+  // They can view the landing page.
 
   return (
     <div className="landing-page">
@@ -68,15 +60,15 @@ export default function Landing() {
           </div>
         </section>
 
-        <section className="landing-section" style={{ background: '#f9fafb', borderRadius: '1rem' }}>
+        <section className="landing-section" style={{ background: 'var(--bg-surface-elevated)', borderRadius: '1rem' }}>
           <h2 className="landing-section-title">Mentorship Designed for You</h2>
           <div className="features-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))' }}>
-            <div className="feature-card" style={{ background: '#fff' }}>
+            <div className="feature-card" style={{ background: 'var(--bg-card)' }}>
               <div className="feature-icon">👨‍🏫</div>
               <h3>Professional Mentors</h3>
               <p>Experienced and verified industry professionals who provide structured, high-level guidance for your career and advanced technical skills.</p>
             </div>
-            <div className="feature-card" style={{ background: '#fff' }}>
+            <div className="feature-card" style={{ background: 'var(--bg-card)' }}>
               <div className="feature-icon">🎓</div>
               <h3>Peer Mentors</h3>
               <p>Approved learners with demonstrated experience who offer relatable, practical help and study support based on their recent successes.</p>

@@ -35,19 +35,25 @@ export default function ProfileMenu() {
     }
   };
 
+  const getBasePath = () => {
+    switch (user.role) {
+      case 'STUDENT': return '/student';
+      case 'MENTOR': return '/mentor';
+      case 'ADMIN': return '/admin';
+      case 'GUARDIAN': return '/guardian';
+      default: return '';
+    }
+  };
+
   return (
     <div className="profile-menu-container" ref={menuRef}>
-      <button 
-        className="profile-menu-trigger" 
+      <button
+        className="profile-menu-trigger"
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen}
         aria-haspopup="true"
       >
-        {user.profileImage ? (
-          <img src={user.profileImage} alt={user.name} className="profile-avatar" style={{ objectFit: 'cover' }} />
-        ) : (
-          <span className="profile-avatar">{user.name?.charAt(0)?.toUpperCase() || 'U'}</span>
-        )}
+        <span className="profile-avatar">{user.profileImage ? <img src={user.profileImage} alt="" style={{width:'100%',height:'100%',borderRadius:'50%',objectFit:'cover'}}/> : (user.name?.charAt(0)?.toUpperCase() || 'U')}</span>
         <span className="profile-name">{user.name}</span>
         <span className="profile-caret">▾</span>
       </button>
@@ -55,28 +61,77 @@ export default function ProfileMenu() {
       {isOpen && (
         <div className="profile-dropdown-menu">
           <div className="profile-dropdown-header">
-            {user.profileImage ? (
-              <img src={user.profileImage} alt={user.name} className="dropdown-avatar" style={{ objectFit: 'cover' }} />
-            ) : (
-              <span className="dropdown-avatar">{user.name?.charAt(0)?.toUpperCase() || 'U'}</span>
-            )}
+            <span className="dropdown-avatar">{user.profileImage ? <img src={user.profileImage} alt="" style={{width:'100%',height:'100%',borderRadius:'50%',objectFit:'cover'}}/> : (user.name?.charAt(0)?.toUpperCase() || 'U')}</span>
             <div className="dropdown-user-info">
               <span className="dropdown-name">{user.name}</span>
               <span className="dropdown-role">{user.role?.toLowerCase()}</span>
             </div>
           </div>
-          
+
           <div className="profile-dropdown-body">
-            <NavLink 
-              to={getProfileLink()} 
-              className="dropdown-item"
-              onClick={() => setIsOpen(false)}
-            >
-              My Profile
-            </NavLink>
-            <button className="dropdown-item dropdown-logout" onClick={logout}>
-              Sign Out
-            </button>
+            {user.role === 'ADMIN' ? (
+              <>
+                <NavLink
+                  to={`${getBasePath()}/account`}
+                  className="dropdown-item"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <span className="dropdown-icon" aria-hidden="true">⚙️</span> Account Settings
+                </NavLink>
+                <div className="dropdown-divider"></div>
+                <button className="dropdown-item dropdown-logout" onClick={logout}>
+                  <span className="dropdown-icon" aria-hidden="true">🚪</span> Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <NavLink
+                  to={getProfileLink()}
+                  className="dropdown-item"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <span className="dropdown-icon" aria-hidden="true">👤</span> Profile
+                </NavLink>
+
+                <NavLink
+                  to={`${getBasePath()}/account`}
+                  className="dropdown-item"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <span className="dropdown-icon" aria-hidden="true">🔐</span> Account & Privacy
+                </NavLink>
+
+                <NavLink
+                  to={`${getBasePath()}/complaints`}
+                  className="dropdown-item"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <span className="dropdown-icon" aria-hidden="true">⚠</span> My Complaints
+                </NavLink>
+
+                <NavLink
+                  to={`${getBasePath()}/help`}
+                  className="dropdown-item"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <span className="dropdown-icon" aria-hidden="true">❓</span> Help & Support
+                </NavLink>
+
+                <NavLink
+                  to={`${getBasePath()}/about`}
+                  className="dropdown-item"
+                  onClick={() => setIsOpen(false)}
+                >
+                  <span className="dropdown-icon" aria-hidden="true">ℹ️</span> About MentorConnect
+                </NavLink>
+
+                <div className="dropdown-divider"></div>
+
+                <button className="dropdown-item dropdown-logout" onClick={logout}>
+                  <span className="dropdown-icon" aria-hidden="true">🚪</span> Logout
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}

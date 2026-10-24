@@ -206,4 +206,122 @@ const recommendMentors = async (req, res) => {
   }
 };
 
-module.exports = { assist, recommendMentors };
+/**
+ * POST /api/ai/mentor-assist
+ * Generate a personalized AI response for mentors using their schedule, availability, and assignments.
+ */
+const mentorAssist = async (req, res) => {
+  try {
+    const { question } = req.body;
+
+    if (!question || question.trim() === '') {
+      return res.status(400).json({ success: false, error: 'Question is required.' });
+    }
+    if (question.trim().length > 2000) {
+      return res.status(400).json({ success: false, error: 'Question is too long (max 2000 characters).' });
+    }
+
+    const mentorProfile = req.user.mentorProfile;
+    if (!mentorProfile) {
+      return res.status(403).json({ success: false, error: 'Mentor profile not found.' });
+    }
+
+    if (!process.env.AI_SERVICE_API_KEY || process.env.AI_SERVICE_API_KEY.trim() === '') {
+      return res.status(503).json({ success: false, error: 'AI service is not configured.' });
+    }
+
+    // 1. Fetch upcoming confirmed sessions
+    const upcomingSessions = await prisma.session.findMany({
+      where: {
+        mentorship: { mentorId: mentorProfile.id },
+        scheduledAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
+        status: 'SCHEDULED',
+        OR: [
+          { payment: null },
+          { payment: { amount: 0 } },
+          { payment: { status: 'PAID' } }
+        ]
+      },
+      include: {
+        mentorship: {
+          include: { student: { include: { user: { select: { name: true } } } } }
+        }
+      },
+      orderBy: { scheduledAt: 'asc' },
+      take: 20
+    });
+
+    // 2. Fetch active availabilities
+    const availabilities = await prisma.mentorAvailability.findMany({
+      where: { mentorId: mentorProfile.id, isActive: true }
+    });
+
+    // 3. Fetch mentor topics and basic info
+    const fullProfile = await prisma.mentorProfile.findUnique({
+      where: { id: mentorProfile.id },
+      include: { topics: { include: { topic: true } } }
+    });
+
+    // 4. Fetch active mentorships (student list)
+    const activeMentorships = await prisma.mentorship.findMany({
+      where: { mentorId: mentorProfile.id, status: 'ACTIVE' },
+      include: { student: { include: { user: { select: { name: true } } } } }
+    });
+
+    // 5. Fetch pending assignments (submitted but not reviewed)
+    const pendingAssignments = await prisma.assignmentSubmission.findMany({
+      where: {
+        assignment: { mentorId: mentorProfile.id },
+        status: 'SUBMITTED'
+      },
+      include: {
+        assignment: { select: { title: true, dueDate: true } },
+        student: { include: { user: { select: { name: true } } } }
+      }
+    });
+
+    // Build context
+    const context = {
+      mentorInfo: {
+        name: req.user.name,
+        sessionFee: fullProfile.sessionFee,
+        topics: fullProfile.topics.map(t => t.topic.name)
+      },
+      upcomingSessions: upcomingSessions.map(s => ({
+        studentName: s.mentorship.student.user.name,
+        topic: s.topic || 'General Mentoring',
+        scheduledAt: s.scheduledAt,
+        durationMinutes: s.duration
+      })),
+      availability: availabilities.map(a => ({
+        dayOfWeek: a.dayOfWeek,
+        startTime: a.startTime,
+        endTime: a.endTime
+      })),
+      activeStudents: activeMentorships.map(m => m.student.user.name),
+      pendingAssignments: pendingAssignments.map(sub => ({
+        studentName: sub.student.user.name,
+        assignmentTitle: sub.assignment.title,
+        submittedAt: sub.submittedAt
+      }))
+    };
+
+    // Build prompt and call Gemini
+    const prompt = aiService.buildMentorAssistPrompt(context, question.trim());
+
+    let answer;
+    try {
+      answer = await aiService.generateText(prompt);
+    } catch (aiErr) {
+      console.error('[Mentor AI] Error:', aiErr.message);
+      return res.status(503).json({ success: false, error: 'AI service is temporarily unavailable.' });
+    }
+
+    return res.status(200).json({ success: true, answer });
+  } catch (err) {
+    console.error('[Mentor AI] Unexpected error:', err.message);
+    return res.status(500).json({ success: false, error: 'An unexpected error occurred.' });
+  }
+};
+
+module.exports = { assist, recommendMentors, mentorAssist };

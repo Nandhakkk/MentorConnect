@@ -15,7 +15,10 @@ export async function createPaymentOrder(sessionId) {
     body: JSON.stringify({ sessionId })
   });
   const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Failed to create payment order');
+  if (!response.ok) {
+    const errorMsg = data.message || data.details || 'Failed to create payment order';
+    throw new Error(errorMsg);
+  }
   return data;
 }
 
@@ -26,6 +29,9 @@ export async function verifyPayment(paymentDetails) {
     body: JSON.stringify(paymentDetails)
   });
   const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Failed to verify payment');
+  if (!response.ok) {
+    const errorMsg = data.message || data.details || 'Failed to verify payment';
+    throw new Error(errorMsg);
+  }
   return data;
 }

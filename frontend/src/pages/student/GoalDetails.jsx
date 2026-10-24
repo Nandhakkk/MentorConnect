@@ -108,7 +108,7 @@ export default function GoalDetails() {
   };
 
   if (loading) return <div className="page-content">Loading goal details...</div>;
-  if (error) return <div className="page-content" style={{ color: '#ef4444' }}>{error}</div>;
+  if (error) return <div className="page-content" style={{ color: 'var(--error)' }}>{error}</div>;
   if (!goal) return <div className="page-content">Goal not found.</div>;
 
   const total = goal.milestones?.length || 0;
@@ -124,40 +124,40 @@ export default function GoalDetails() {
         {isEditingGoal ? (
           <form onSubmit={handleUpdateGoal}>
             <div style={{ marginBottom: '1rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Goal Title *</label>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Goal Title *</label>
               <input 
                 type="text" 
+                className="form-input"
                 value={editGoalData.title} 
                 onChange={e => setEditGoalData({...editGoalData, title: e.target.value})}
                 required 
-                style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
               />
             </div>
             <div style={{ marginBottom: '1rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Description</label>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Description</label>
               <textarea 
+                className="form-input"
                 value={editGoalData.description} 
                 onChange={e => setEditGoalData({...editGoalData, description: e.target.value})}
                 rows="3"
-                style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
               />
             </div>
             <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
               <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Target Date</label>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Target Date</label>
                 <input 
                   type="date" 
+                  className="form-input"
                   value={editGoalData.targetDate} 
                   onChange={e => setEditGoalData({...editGoalData, targetDate: e.target.value})}
-                  style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
                 />
               </div>
               <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Status</label>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Status</label>
                 <select 
+                  className="form-input"
                   value={editGoalData.status} 
                   onChange={e => setEditGoalData({...editGoalData, status: e.target.value})}
-                  style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
                 >
                   <option value="ACTIVE">ACTIVE</option>
                   <option value="COMPLETED">COMPLETED</option>
@@ -167,7 +167,7 @@ export default function GoalDetails() {
             </div>
             <div style={{ display: 'flex', gap: '1rem' }}>
               <button type="submit" className="btn btn-primary">Save Changes</button>
-              <button type="button" onClick={() => setIsEditingGoal(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>Cancel</button>
+              <button type="button" className="btn btn-secondary" onClick={() => setIsEditingGoal(false)}>Cancel</button>
             </div>
           </form>
         ) : (
@@ -178,8 +178,9 @@ export default function GoalDetails() {
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                   <span style={{ 
                     fontSize: '0.8rem', padding: '0.2rem 0.6rem', borderRadius: '12px', 
-                    background: goal.status === 'COMPLETED' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(99, 102, 241, 0.1)',
-                    color: goal.status === 'COMPLETED' ? '#10b981' : '#818cf8'
+                    background: goal.status === 'COMPLETED' ? 'var(--success-bg)' : 'var(--info-bg)',
+                    color: goal.status === 'COMPLETED' ? 'var(--success)' : 'var(--info)',
+                    border: '1px solid var(--border-subtle)'
                   }}>
                     {goal.status}
                   </span>
@@ -196,10 +197,10 @@ export default function GoalDetails() {
                     Mark Complete
                   </button>
                 )}
-                <button onClick={() => setIsEditingGoal(true)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', padding: '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem' }}>
+                <button type="button" onClick={() => setIsEditingGoal(true)} className="btn btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
                   Edit
                 </button>
-                <button onClick={handleDeleteGoal} style={{ background: 'rgba(239,68,68,0.2)', border: 'none', color: '#ef4444', padding: '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem' }}>
+                <button type="button" onClick={handleDeleteGoal} style={{ background: 'var(--error-bg)', border: '1px solid var(--border-subtle)', color: 'var(--error)', padding: '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem' }}>
                   Delete
                 </button>
               </div>
@@ -215,7 +216,7 @@ export default function GoalDetails() {
                 <span>Overall Progress ({completed}/{total})</span>
                 <span>{progress}%</span>
               </div>
-              <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', overflow: 'hidden' }}>
+              <div style={{ width: '100%', height: '8px', background: 'var(--border-subtle)', borderRadius: '4px', overflow: 'hidden' }}>
                 <div style={{ height: '100%', width: `${progress}%`, background: 'var(--accent-primary)', transition: 'width 0.3s ease' }}></div>
               </div>
             </div>
@@ -226,7 +227,7 @@ export default function GoalDetails() {
       {/* Milestones Section */}
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <h3 style={{ margin: 0 }}>Milestones</h3>
+          <h3 style={{ margin: 0, color: 'var(--text-primary)' }}>Milestones</h3>
           <button onClick={() => setShowMilestoneForm(!showMilestoneForm)} style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600 }}>
             {showMilestoneForm ? '- Cancel' : '+ Add Milestone'}
           </button>
@@ -239,26 +240,28 @@ export default function GoalDetails() {
                 <div style={{ flex: '1 1 200px' }}>
                   <input 
                     type="text" 
+                    className="form-input"
                     placeholder="Milestone title *" 
                     value={newMilestone.title} 
                     onChange={e => setNewMilestone({...newMilestone, title: e.target.value})}
                     required 
-                    style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white', marginBottom: '0.5rem' }}
+                    style={{ marginBottom: '0.5rem' }}
                   />
                   <input 
                     type="date" 
+                    className="form-input"
                     value={newMilestone.dueDate} 
                     onChange={e => setNewMilestone({...newMilestone, dueDate: e.target.value})}
-                    style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
                   />
                 </div>
                 <div style={{ flex: '2 1 300px', display: 'flex', flexDirection: 'column' }}>
                   <textarea 
+                    className="form-input"
                     placeholder="Description (optional)" 
                     value={newMilestone.description} 
                     onChange={e => setNewMilestone({...newMilestone, description: e.target.value})}
                     rows="2"
-                    style={{ flex: 1, width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white', marginBottom: '0.5rem' }}
+                    style={{ flex: 1, marginBottom: '0.5rem' }}
                   />
                   <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start' }}>Save Milestone</button>
                 </div>
@@ -290,7 +293,7 @@ export default function GoalDetails() {
                     }}>
                       {milestone.title}
                     </h4>
-                    <button onClick={() => handleDeleteMilestone(milestone.id)} style={{ background: 'none', border: 'none', color: '#ef4444', opacity: 0.7, cursor: 'pointer', fontSize: '0.8rem' }}>
+                    <button onClick={() => handleDeleteMilestone(milestone.id)} style={{ background: 'none', border: 'none', color: 'var(--error)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>
                       Delete
                     </button>
                   </div>

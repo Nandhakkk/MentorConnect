@@ -7,11 +7,16 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 /**
  * Register a new user
  */
-export async function registerUser(name, email, password, role, dateOfBirth) {
+export async function registerUser(name, email, password, role, dateOfBirth, goal) {
+  const payload = { name, email, password, role, dateOfBirth };
+  if (goal && typeof goal === 'string' && goal.trim()) {
+    payload.goal = goal.trim();
+    payload.careerGoal = goal.trim();
+  }
   const response = await fetch(`${API_BASE_URL}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, email, password, role, dateOfBirth })
+    body: JSON.stringify(payload)
   });
 
   const data = await response.json();

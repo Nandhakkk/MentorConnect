@@ -10,6 +10,8 @@ router.get('/mentor/earnings', authMiddleware.requireApprovedMentor, financeCont
 
 // Admin endpoints
 router.get('/admin/summary', authMiddleware.requireRole('ADMIN'), financeController.getAdminFinanceSummary);
+router.get('/admin/trend', authMiddleware.requireRole('ADMIN'), financeController.getAdminFinanceTrend);
+router.get('/admin/transactions', authMiddleware.requireRole('ADMIN'), financeController.getAdminTransactions);
 router.get('/admin/payouts', authMiddleware.requireRole('ADMIN'), financeController.getAdminPayouts);
 router.put('/admin/payouts/:id/process', authMiddleware.requireRole('ADMIN'), financeController.processPayout);
 router.put('/admin/payouts/:id/complete', authMiddleware.requireRole('ADMIN'), financeController.completePayout);

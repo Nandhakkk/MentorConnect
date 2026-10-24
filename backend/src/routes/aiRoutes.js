@@ -3,11 +3,11 @@ const router = express.Router();
 const aiController = require('../controllers/aiController');
 const authMiddleware = require('../middleware/authMiddleware');
 
-// Authentication + STUDENT-only guard
+// Authentication
 router.use(authMiddleware.authenticateToken);
-router.use(authMiddleware.requireRole('STUDENT'));
 
-router.post('/assist', aiController.assist);
-router.post('/mentor-recommendations', aiController.recommendMentors);
+router.post('/assist', authMiddleware.requireRole('STUDENT'), aiController.assist);
+router.post('/mentor-recommendations', authMiddleware.requireRole('STUDENT'), aiController.recommendMentors);
+router.post('/mentor-assist', authMiddleware.requireApprovedMentor, aiController.mentorAssist);
 
 module.exports = router;

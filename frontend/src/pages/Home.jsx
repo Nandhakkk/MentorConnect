@@ -29,7 +29,7 @@ export default function Home() {
           </div>
         </div>
 
-        <button onClick={logout} className="btn" style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)' }} id="logout-btn">
+        <button onClick={logout} className="btn" style={{ background: 'var(--error-bg)', color: 'var(--error)', border: '1px solid var(--error-border)' }} id="logout-btn">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
             <polyline points="16 17 21 12 16 7"/>
@@ -51,8 +51,8 @@ export default function Home() {
           </div>
 
           <div style={{
-            background: isStudent ? 'rgba(99, 102, 241, 0.15)' : 'rgba(168, 85, 247, 0.15)',
-            border: `1px solid ${isStudent ? 'rgba(99, 102, 241, 0.3)' : 'rgba(168, 85, 247, 0.3)'}`,
+            background: isStudent ? 'var(--info-bg)' : 'var(--purple-bg)',
+            border: `1px solid ${isStudent ? 'var(--info-border)' : 'var(--purple-border)'}`,
             padding: '0.5rem 1rem',
             borderRadius: 'var(--radius-md)',
             textAlign: 'center'
@@ -60,14 +60,14 @@ export default function Home() {
             <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', display: 'block' }}>
               Account Role
             </span>
-            <span style={{ fontSize: '1.1rem', fontWeight: 800, color: isStudent ? '#818cf8' : '#c084fc' }}>
+            <span style={{ fontSize: '1.1rem', fontWeight: 800, color: isStudent ? 'var(--info)' : 'var(--purple)' }}>
               {user?.role}
             </span>
           </div>
         </div>
 
         {/* Profile Information Block */}
-        <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '1.25rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+        <div style={{ background: 'var(--bg-surface-elevated)', padding: '1.25rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
           <h3 style={{ fontSize: '0.95rem', color: 'var(--accent-primary)', marginBottom: '0.75rem' }}>
             Auto-Created {isStudent ? 'Student' : 'Mentor'} Profile
           </h3>

@@ -69,19 +69,19 @@ export default function CreateAssignment() {
     <div className="page-content">
       <BackLink to="/mentor/assignments" label="Back to Assignments" />
       <div className="glass-card" style={{ padding: '2rem', maxWidth: '600px', margin: '0 auto' }}>
-        <h2 style={{ marginTop: 0, marginBottom: '1.5rem', color: 'white' }}>Create New Assignment</h2>
+        <h2 style={{ marginTop: 0, marginBottom: '1.5rem', color: 'var(--text-primary)' }}>Create New Assignment</h2>
         
         {sessions.length === 0 ? (
-          <div style={{ color: '#ef4444' }}>You have no eligible mentoring sessions to create assignments for.</div>
+          <div style={{ color: 'var(--error)' }}>You have no eligible mentoring sessions to create assignments for.</div>
         ) : (
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div>
               <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Select Mentoring Session</label>
               <select 
+                className="form-input"
                 value={formData.sessionId}
                 onChange={e => setFormData({...formData, sessionId: e.target.value})}
                 required
-                style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
               >
                 {sessions.map(s => (
                   <option key={s.id} value={s.id}>
@@ -94,21 +94,22 @@ export default function CreateAssignment() {
               <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Title</label>
               <input 
                 type="text"
+                className="form-input"
                 value={formData.title}
                 onChange={e => setFormData({...formData, title: e.target.value})}
                 required
-                style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
                 placeholder="e.g., React Component Task"
               />
             </div>
             <div>
               <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Description & Instructions</label>
               <textarea 
+                className="form-input"
                 value={formData.description}
                 onChange={e => setFormData({...formData, description: e.target.value})}
                 required
                 rows="5"
-                style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white', resize: 'vertical' }}
+                style={{ resize: 'vertical' }}
                 placeholder="Detail what the student needs to do..."
               ></textarea>
             </div>
@@ -116,19 +117,19 @@ export default function CreateAssignment() {
               <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Due Date</label>
               <input 
                 type="datetime-local"
+                className="form-input"
                 value={formData.dueDate}
                 onChange={e => setFormData({...formData, dueDate: e.target.value})}
                 required
-                style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
               />
             </div>
             <div>
               <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Resource URL (Optional)</label>
               <input 
                 type="url"
+                className="form-input"
                 value={formData.resourceUrl}
                 onChange={e => setFormData({...formData, resourceUrl: e.target.value})}
-                style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
                 placeholder="https://example.com/resource"
               />
             </div>
@@ -138,7 +139,7 @@ export default function CreateAssignment() {
                 type="file"
                 multiple
                 onChange={handleFileChange}
-                style={{ color: 'white' }}
+                style={{ color: 'var(--text-primary)' }}
               />
               {referenceFiles.length > 0 && (
                 <ul style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '0.5rem', paddingLeft: '1.5rem' }}>
@@ -149,7 +150,7 @@ export default function CreateAssignment() {
               )}
             </div>
             
-            {error && <div style={{ color: '#ef4444' }}>{error}</div>}
+            {error && <div style={{ color: 'var(--error)' }}>{error}</div>}
             
             <button type="submit" className="btn btn-primary" style={{ marginTop: '1rem' }}>
               Assign Task

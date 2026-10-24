@@ -29,6 +29,38 @@ export async function getMyComplaints() {
   return data.data;
 }
 
+export async function getComplaintsAgainstMe() {
+  const response = await fetch(`${API_BASE_URL}/complaints/against-me`, {
+    method: 'GET',
+    headers: getAuthHeaders()
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to fetch complaints against me');
+  return data.data;
+}
+
+export async function respondToComplaint(id, payload) {
+  const response = await fetch(`${API_BASE_URL}/complaints/${id}/respond`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(payload)
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to submit response');
+  return data.data;
+}
+
+export async function sendComplaintMessage(id, content) {
+  const response = await fetch(`${API_BASE_URL}/complaints/${id}/messages`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ content })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to send message');
+  return data.data;
+}
+
 export async function getComplaint(id) {
   const response = await fetch(`${API_BASE_URL}/complaints/${id}`, {
     method: 'GET',

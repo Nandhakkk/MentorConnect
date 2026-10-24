@@ -1,6 +1,8 @@
 const prisma = require('../config/db');
 const notificationService = require('../services/notificationService');
 const fileService = require('../services/fileService');
+const guardianService = require('../services/guardianService');
+const emailService = require('../services/emailService');
 
 /**
  * CREATE ASSIGNMENT
@@ -87,6 +89,19 @@ const createAssignment = async (req, res) => {
       assignment.id,
       'ASSIGNMENT'
     );
+
+    // Notify Guardian if applicable
+    const kolkataDue = emailService.formatKolkataDateTime(dueDateObj);
+    await guardianService.notifyGuardianEvent(
+      session.mentorship.student.userId,
+      'ASSIGNMENT',
+      {
+        title: 'New Assignment Assigned',
+        message: `A new assignment "${title}" has been assigned by mentor ${session.mentorship.mentor.user?.name || ''}, due on ${kolkataDue}.`,
+        referenceId: assignment.id,
+        referenceType: 'ASSIGNMENT'
+      }
+    ).catch(err => console.error('Guardian assignment create notification error:', err.message));
 
     return res.status(201).json({ status: 'success', data: assignment });
   } catch (err) {
@@ -301,6 +316,18 @@ const submitAssignment = async (req, res) => {
       'ASSIGNMENT'
     );
 
+    // Notify Guardian if applicable
+    await guardianService.notifyGuardianEvent(
+      assignment.student.userId,
+      'ASSIGNMENT',
+      {
+        title: 'Assignment Submitted',
+        message: `The assignment "${assignment.title}" has been submitted${isLate ? ' (Late Submission)' : ''}.`,
+        referenceId: assignment.id,
+        referenceType: 'ASSIGNMENT'
+      }
+    ).catch(err => console.error('Guardian assignment submit notification error:', err.message));
+
     return res.status(201).json({ status: 'success', data: submission });
   } catch (err) {
     return res.status(500).json({ status: 'error', message: err.message });
@@ -381,6 +408,20 @@ const reviewAssignment = async (req, res) => {
       assignment.id,
       'ASSIGNMENT'
     );
+
+    // Notify Guardian if applicable
+    await guardianService.notifyGuardianEvent(
+      assignment.student.userId,
+      'ASSIGNMENT',
+      {
+        title: action === 'REVIEW' ? 'Assignment Reviewed' : 'Assignment Needs Revision',
+        message: action === 'REVIEW'
+          ? `The assignment "${assignment.title}" has been reviewed by the mentor.`
+          : `The assignment "${assignment.title}" was returned by the mentor for revision.`,
+        referenceId: assignment.id,
+        referenceType: 'ASSIGNMENT'
+      }
+    ).catch(err => console.error('Guardian assignment review notification error:', err.message));
 
     return res.status(200).json({ status: 'success', message: 'Review saved successfully' });
   } catch (err) {

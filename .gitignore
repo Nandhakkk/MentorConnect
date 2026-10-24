@@ -38,3 +38,16 @@ Thumbs.db
 # Prisma local database files (if sqlite is ever tested)
 *.db
 *.db-journal
+
+# Database backups
+backend/backup_*.sql
+
+# Local diagnostic output
+backend/output.json
+
+# Temporary maintenance and diagnostic scripts
+backend/analyzeUsers.js
+backend/check.js
+backend/cleanupUsers.js
+backend/test.js
+backend/test-url.js

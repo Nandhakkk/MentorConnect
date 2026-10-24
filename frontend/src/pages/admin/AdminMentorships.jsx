@@ -48,7 +48,8 @@ export default function AdminMentorships() {
           <select 
             value={statusFilter}
             onChange={e => setStatusFilter(e.target.value)}
-            style={{ padding: '0.5rem 1rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
+            className="form-input"
+            style={{ maxWidth: '220px' }}
           >
             <option value="ALL">All Mentorships</option>
             <option value="PENDING">Pending</option>
@@ -60,15 +61,15 @@ export default function AdminMentorships() {
       </div>
 
       <div className="glass-card" style={{ overflowX: 'auto' }}>
-        {error && <div style={{ color: '#ef4444', padding: '1rem' }}>{error}</div>}
+        {error && <div style={{ color: 'var(--error)', background: 'var(--error-bg)', border: '1px solid var(--error-border)', padding: '1rem', borderRadius: 'var(--radius-md)' }}>{error}</div>}
         
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
           <thead>
-            <tr style={{ borderBottom: '1px solid var(--border-subtle)', background: 'rgba(255,255,255,0.02)' }}>
-              <th style={{ padding: '1rem' }}>Student</th>
-              <th style={{ padding: '1rem' }}>Mentor</th>
-              <th style={{ padding: '1rem' }}>Status</th>
-              <th style={{ padding: '1rem' }}>Started Date</th>
+            <tr style={{ borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-surface-elevated)' }}>
+              <th style={{ padding: '1rem', color: 'var(--text-secondary)' }}>Student</th>
+              <th style={{ padding: '1rem', color: 'var(--text-secondary)' }}>Mentor</th>
+              <th style={{ padding: '1rem', color: 'var(--text-secondary)' }}>Status</th>
+              <th style={{ padding: '1rem', color: 'var(--text-secondary)' }}>Started Date</th>
             </tr>
           </thead>
           <tbody>
@@ -79,11 +80,11 @@ export default function AdminMentorships() {
             ) : (
               mentorships.map(m => (
                 <tr key={m.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                  <td style={{ padding: '1rem', fontWeight: 500, color: 'white' }}>
+                  <td style={{ padding: '1rem', fontWeight: 600, color: 'var(--text-primary)' }}>
                     {m.student.user.name}
                     <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 'normal' }}>{m.student.user.email}</div>
                   </td>
-                  <td style={{ padding: '1rem', fontWeight: 500, color: 'white' }}>
+                  <td style={{ padding: '1rem', fontWeight: 600, color: 'var(--text-primary)' }}>
                     {m.mentor.user.name}
                     <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 'normal' }}>{m.mentor.user.email}</div>
                   </td>

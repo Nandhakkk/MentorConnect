@@ -16,6 +16,12 @@ router.get('/mentorships', adminController.getMentorships);
 router.get('/mentor-applications', adminController.getMentorApplications);
 router.get('/mentor-applications/:id', adminController.getMentorApplicationById);
 router.put('/mentor-applications/:id/status', adminController.updateMentorApplicationStatus);
+router.put('/mentor-applications/:id/reconsider', adminController.reconsiderMentorApplication);
+router.post('/mentor-applications/:id/generate-portfolio', adminController.generateMentorPortfolio);
+
+// Mentor Verification Requests (Post-approval changes)
+router.get('/verification-requests', adminController.getVerificationRequests);
+router.put('/verification-requests/:id/status', adminController.updateVerificationRequestStatus);
 
 // Complaints
 router.get('/complaints', adminController.getComplaints);
@@ -29,5 +35,6 @@ router.put('/users/:userId/suspend', adminController.toggleUserSuspension);
 router.get('/peer-mentor-applications', adminController.getPeerMentorApplications);
 router.get('/peer-mentor-applications/:id', adminController.getPeerMentorApplicationById);
 router.put('/peer-mentor-applications/:id/status', adminController.updatePeerMentorApplicationStatus);
+router.put('/peer-mentor-applications/:id/reconsider', adminController.reconsiderPeerMentorApplication);
 
 module.exports = router;

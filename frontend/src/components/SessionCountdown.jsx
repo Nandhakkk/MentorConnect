@@ -66,12 +66,12 @@ export default function SessionCountdown({ scheduledAt, duration, status }) {
   if (!scheduledAt) return null;
 
   let stateColor = 'var(--text-secondary)';
-  if (sessionState === 'Live Now') stateColor = '#10b981';
-  else if (sessionState === 'Cancelled') stateColor = '#ef4444';
+  if (sessionState === 'Live Now') stateColor = 'var(--success)';
+  else if (sessionState === 'Cancelled') stateColor = 'var(--error)';
   else if (sessionState === 'Session Ended' || sessionState === 'Completed') stateColor = 'var(--text-muted)';
 
   return (
-    <div style={{ padding: '0.75rem', background: 'rgba(0,0,0,0.2)', borderRadius: '4px', textAlign: 'center' }}>
+    <div style={{ padding: '0.75rem', background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)', textAlign: 'center' }}>
       <div style={{ fontSize: '0.85rem', color: stateColor, marginBottom: timeLeft ? '0.25rem' : '0', fontWeight: sessionState === 'Live Now' ? 'bold' : 'normal' }}>
         {sessionState}
       </div>

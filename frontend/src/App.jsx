@@ -28,6 +28,7 @@ import LiveSession from './pages/student/LiveSession';
 import ReviewSession from './pages/student/ReviewSession';
 import ReportSession from './pages/shared/ReportSession';
 import MyComplaints from './pages/shared/MyComplaints';
+import ComplaintDetails from './pages/shared/ComplaintDetails';
 import StudentAssignments from './pages/student/StudentAssignments';
 import AssignmentDetails from './pages/student/AssignmentDetails';
 import StudentMessages from './pages/student/StudentMessages';
@@ -50,9 +51,11 @@ import ReviewAssignment from './pages/mentor/ReviewAssignment';
 import MentorAvailability from './pages/mentor/MentorAvailability';
 import MentorMessages from './pages/mentor/MentorMessages';
 import MentorEarnings from './pages/mentor/MentorEarnings';
+import MentorAIAssistant from './pages/mentor/MentorAIAssistant';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminMentors from './pages/admin/AdminMentors';
+import AdminPeerMentors from './pages/admin/AdminPeerMentors';
 import AdminMentorships from './pages/admin/AdminMentorships';
 import AdminComplaints from './pages/admin/AdminComplaints';
 import AdminComplaintReview from './pages/admin/AdminComplaintReview';
@@ -60,13 +63,19 @@ import AdminMentorApplications from './pages/admin/AdminMentorApplications';
 import AdminMentorApplicationReview from './pages/admin/AdminMentorApplicationReview';
 import AdminPeerMentorApplications from './pages/admin/AdminPeerMentorApplications';
 import AdminPeerMentorApplicationReview from './pages/admin/AdminPeerMentorApplicationReview';
+import AdminVerificationRequests from './pages/admin/AdminVerificationRequests';
 import AdminFinanceDashboard from './pages/admin/AdminFinanceDashboard';
 import GuardianDashboard from './pages/guardian/GuardianDashboard';
+import GuardianSummary from './pages/guardian/GuardianSummary';
+import GuardianVerify from './pages/guardian/GuardianVerify';
+
+// Shared Pages
+import AccountPrivacy from './pages/shared/AccountPrivacy';
+import HelpSupport from './pages/shared/HelpSupport';
+import About from './pages/shared/About';
 
 // Placeholder pages for upcoming features
 // (None currently required)
-
-
 
 export default function App() {
   return (
@@ -76,6 +85,8 @@ export default function App() {
           {/* ─── Public Routes ─── */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/guardian/summary/:token" element={<GuardianSummary />} />
+          <Route path="/guardian/verify/:token" element={<GuardianVerify />} />
 
           {/* ─── Root Route ─── */}
           <Route path="/" element={<Landing />} />
@@ -101,6 +112,7 @@ export default function App() {
             <Route path="sessions/:id/review" element={<ReviewSession />} />
             <Route path="sessions/:id/report" element={<ReportSession />} />
             <Route path="complaints" element={<MyComplaints />} />
+            <Route path="complaints/:id" element={<ComplaintDetails />} />
             <Route path="assignments" element={<StudentAssignments />} />
             <Route path="assignments/:id" element={<AssignmentDetails />} />
             <Route path="messages" element={<StudentMessages />} />
@@ -109,6 +121,9 @@ export default function App() {
             <Route path="profile" element={<StudentProfileForm />} />
             <Route path="onboarding" element={<StudentOnboarding />} />
             <Route path="peer-mentor/apply" element={<PeerMentorApplication />} />
+            <Route path="account" element={<AccountPrivacy />} />
+            <Route path="help" element={<HelpSupport />} />
+            <Route path="about" element={<About />} />
             {/* Peer Mentor Dashboard Routes (capability-based, still under /student) */}
             <Route path="mentor-dashboard/students" element={<PeerMentorStudents />} />
             <Route path="mentor-dashboard/sessions" element={<MentorSessions />} />
@@ -118,6 +133,7 @@ export default function App() {
             <Route path="mentor-dashboard/availability" element={<MentorAvailability />} />
             <Route path="mentor-dashboard/profile" element={<PeerMentorProfileForm />} />
             <Route path="mentor-dashboard/earnings" element={<MentorEarnings />} />
+            <Route path="mentor-dashboard/ai" element={<MentorAIAssistant />} />
             <Route index element={<Navigate to="dashboard" replace />} />
           </Route>
 
@@ -137,6 +153,7 @@ export default function App() {
             <Route path="sessions/:id/review" element={<ReviewStudent />} />
             <Route path="sessions/:id/report" element={<ReportSession />} />
             <Route path="complaints" element={<MyComplaints />} />
+            <Route path="complaints/:id" element={<ComplaintDetails />} />
             <Route path="assignments" element={<MentorAssignments />} />
             <Route path="assignments/create" element={<CreateAssignment />} />
             <Route path="assignments/:id/review" element={<ReviewAssignment />} />
@@ -145,6 +162,10 @@ export default function App() {
             <Route path="profile" element={<MentorProfileForm />} />
             <Route path="application" element={<MentorApplication />} />
             <Route path="earnings" element={<MentorEarnings />} />
+            <Route path="ai" element={<MentorAIAssistant />} />
+            <Route path="account" element={<AccountPrivacy />} />
+            <Route path="help" element={<HelpSupport />} />
+            <Route path="about" element={<About />} />
             <Route index element={<Navigate to="dashboard" replace />} />
           </Route>
 
@@ -160,6 +181,7 @@ export default function App() {
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="users" element={<AdminUsers />} />
             <Route path="mentors" element={<AdminMentors />} />
+            <Route path="peer-mentors" element={<AdminPeerMentors />} />
             <Route path="mentor-applications" element={<AdminMentorApplications />} />
             <Route path="mentor-applications/:id" element={<AdminMentorApplicationReview />} />
             <Route path="mentorships" element={<AdminMentorships />} />
@@ -167,7 +189,9 @@ export default function App() {
             <Route path="complaints/:id" element={<AdminComplaintReview />} />
             <Route path="peer-mentor-applications" element={<AdminPeerMentorApplications />} />
             <Route path="peer-mentor-applications/:id" element={<AdminPeerMentorApplicationReview />} />
+            <Route path="verification-requests" element={<AdminVerificationRequests />} />
             <Route path="finance" element={<AdminFinanceDashboard />} />
+            <Route path="account" element={<AccountPrivacy />} />
             <Route index element={<Navigate to="dashboard" replace />} />
           </Route>
 
@@ -181,6 +205,9 @@ export default function App() {
             }
           >
             <Route path="dashboard" element={<GuardianDashboard />} />
+            <Route path="account" element={<AccountPrivacy />} />
+            <Route path="help" element={<HelpSupport />} />
+            <Route path="about" element={<About />} />
             <Route index element={<Navigate to="dashboard" replace />} />
           </Route>
 

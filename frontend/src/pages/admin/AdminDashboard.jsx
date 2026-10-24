@@ -24,7 +24,7 @@ export default function AdminDashboard() {
   }, []);
 
   if (loading) return <div className="page-content">Loading dashboard...</div>;
-  if (error) return <div className="page-content" style={{ color: '#ef4444' }}>Error: {error}</div>;
+  if (error) return <div className="page-content" style={{ color: 'var(--error)' }}>Error: {error}</div>;
 
   return (
     <div className="page-content">
@@ -63,7 +63,7 @@ export default function AdminDashboard() {
               <path d="M6 12v5c3 3 9 3 12 0v-5"/>
             </svg>
           }
-          color="#10b981"
+          color="var(--success)"
         />
         <DashboardCard
           title="Total Mentors"
@@ -75,7 +75,7 @@ export default function AdminDashboard() {
               <circle cx="12" cy="7" r="4"/>
             </svg>
           }
-          color="#a855f7"
+          color="var(--purple)"
         />
         <DashboardCard
           title="Total Mentorships"
@@ -87,7 +87,7 @@ export default function AdminDashboard() {
               <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
             </svg>
           }
-          color="#f59e0b"
+          color="var(--warning)"
         />
       </div>
 

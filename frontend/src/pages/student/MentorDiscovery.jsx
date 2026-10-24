@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchAvailableMentors } from '../../services/mentorService';
+import { formatCurrency } from '../../utils/currency';
 
 export default function MentorDiscovery() {
   const [mentors, setMentors] = useState([]);
@@ -12,12 +13,12 @@ export default function MentorDiscovery() {
     try {
       setLoading(true);
       const data = await fetchAvailableMentors(params);
-      
+
       let filtered = data;
       if (params.search) {
         const term = params.search.toLowerCase();
-        filtered = filtered.filter(m => 
-          m.user?.name?.toLowerCase().includes(term) || 
+        filtered = filtered.filter(m =>
+          m.user?.name?.toLowerCase().includes(term) ||
           m.expertise?.toLowerCase().includes(term) ||
           m.bio?.toLowerCase().includes(term)
         );
@@ -58,9 +59,9 @@ export default function MentorDiscovery() {
 
   const getMentorTypeBadge = (mentorType) => {
     if (mentorType === 'PEER') {
-      return { label: 'Peer Mentor', bg: 'rgba(99, 102, 241, 0.15)', color: '#818cf8', border: '1px solid rgba(99, 102, 241, 0.3)' };
+      return { label: 'Peer Mentor', bg: 'var(--purple-bg)', color: 'var(--purple)', border: '1px solid var(--border-subtle)' };
     }
-    return { label: 'Professional', bg: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)' };
+    return { label: 'Professional', bg: 'var(--success-bg)', color: 'var(--success)', border: '1px solid var(--border-subtle)' };
   };
 
   return (
@@ -73,7 +74,7 @@ export default function MentorDiscovery() {
       </div>
 
       {/* AI Recommendations Banner */}
-      <div className="glass-card" style={{ padding: '1.5rem', marginBottom: '2rem', background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(99, 102, 241, 0.1) 100%)', border: '1px solid rgba(168, 85, 247, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+      <div className="glass-card" style={{ padding: '1.5rem', marginBottom: '2rem', background: 'var(--info-bg)', border: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             ✨ Let AI Find Your Perfect Match
@@ -82,7 +83,7 @@ export default function MentorDiscovery() {
             Don't want to search? Our AI can analyze your goals, budget, and experience to recommend the best mentors for you.
           </p>
         </div>
-        <Link to="/student/ai-mentors" className="btn btn-primary" style={{ padding: '0.75rem 1.5rem', background: 'linear-gradient(135deg, #a855f7 0%, #6366f1 100%)', border: 'none' }}>
+        <Link to="/student/ai-mentors" className="btn btn-primary" style={{ padding: '0.75rem 1.5rem' }}>
           Get AI Recommendations
         </Link>
       </div>
@@ -91,15 +92,17 @@ export default function MentorDiscovery() {
         <form onSubmit={handleSearch} style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
           <input
             type="text"
+            className="form-input"
             placeholder="Search mentors by name or expertise..."
             value={searchParams.search}
             onChange={(e) => setSearchParams({ ...searchParams, search: e.target.value })}
-            style={{ flex: '1 1 300px', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
+            style={{ flex: '1 1 300px' }}
           />
           <select
+            className="form-input"
             value={searchParams.mentorType}
             onChange={(e) => setSearchParams({ ...searchParams, mentorType: e.target.value })}
-            style={{ padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white', minWidth: '150px' }}
+            style={{ minWidth: '150px' }}
           >
             <option value="">All Types</option>
             <option value="PROFESSIONAL">Professional</option>
@@ -107,24 +110,27 @@ export default function MentorDiscovery() {
           </select>
           <input
             type="number"
-            placeholder="Min Fee ($)"
+            className="form-input"
+            placeholder="Min Fee (₹)"
             value={searchParams.minFee}
             onChange={(e) => setSearchParams({ ...searchParams, minFee: e.target.value })}
-            style={{ width: '120px', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
+            style={{ width: '120px' }}
           />
           <input
             type="number"
-            placeholder="Max Fee ($)"
+            className="form-input"
+            placeholder="Max Fee (₹)"
             value={searchParams.maxFee}
             onChange={(e) => setSearchParams({ ...searchParams, maxFee: e.target.value })}
-            style={{ width: '120px', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
+            style={{ width: '120px' }}
           />
           <button type="submit" className="btn btn-primary" style={{ padding: '0.75rem 1.5rem' }}>Search</button>
           {(searchParams.search || searchParams.minFee || searchParams.maxFee || searchParams.mentorType) && (
-            <button 
-              type="button" 
-              onClick={handleClear} 
-              style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '0.75rem' }}
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={handleClear}
+              style={{ padding: '0.75rem 1.25rem' }}
             >
               Clear
             </button>
@@ -135,7 +141,7 @@ export default function MentorDiscovery() {
       {loading ? (
         <div>Loading mentors...</div>
       ) : error ? (
-        <div style={{ color: '#ef4444' }}>{error}</div>
+        <div style={{ color: 'var(--error)' }}>{error}</div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
           {mentors.length === 0 ? (
@@ -147,38 +153,66 @@ export default function MentorDiscovery() {
               const badge = getMentorTypeBadge(mentor.mentorType);
               return (
                 <div key={mentor.id} className="glass-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                    <div>
-                      <h3 style={{ margin: '0 0 0.25rem 0', color: 'var(--text-primary)', fontSize: '1.1rem' }}>{mentor.user?.name}</h3>
-                      <div style={{ color: 'var(--accent-primary)', fontSize: '0.85rem', fontWeight: 600 }}>{mentor.expertise || 'General Mentor'}</div>
+                  <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                    <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: 'var(--accent-primary)', color: 'white', display: 'grid', placeItems: 'center', fontSize: '1.25rem', fontWeight: 'bold', flexShrink: 0, overflow: 'hidden' }}>
+                      {mentor.user?.profileImage ? (
+                        <img src={mentor.user.profileImage} alt={mentor.user?.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        mentor.user?.name?.charAt(0).toUpperCase() || 'M'
+                      )}
                     </div>
-                    <span style={{ 
-                      fontSize: '0.75rem', padding: '0.2rem 0.5rem', borderRadius: '12px', 
-                      background: badge.bg, color: badge.color, border: badge.border, fontWeight: 600
-                    }}>
-                      {badge.label}
-                    </span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                            <h3 style={{ margin: '0 0 0.15rem 0', color: 'var(--text-primary)', fontSize: '1.1rem' }}>{mentor.user?.name}</h3>
+                            {mentor.isVerified && (
+                              <span style={{ color: 'var(--success)', fontSize: '0.8rem', fontWeight: 600 }}>✓ Verified</span>
+                            )}
+                          </div>
+                          <div style={{ color: 'var(--accent-primary)', fontSize: '0.85rem', fontWeight: 600 }}>
+                            {mentor.portfolio?.headline || mentor.expertise || 'General Mentor'}
+                          </div>
+                        </div>
+                        <span style={{
+                          fontSize: '0.75rem', padding: '0.2rem 0.5rem', borderRadius: '12px',
+                          background: badge.bg, color: badge.color, border: badge.border, fontWeight: 600
+                        }}>
+                          {badge.label}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                   <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
                     {mentor.topics?.map(t => (
-                      <span key={t.topicId} style={{ background: 'rgba(255,255,255,0.1)', padding: '0.2rem 0.6rem', borderRadius: '12px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                      <span key={t.topicId} style={{ background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-subtle)', padding: '0.2rem 0.6rem', borderRadius: '12px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                         {t.topic?.name}
                       </span>
                     ))}
                   </div>
 
-                  {mentor.bio && (
+                  {(mentor.portfolio?.introduction || mentor.bio) && (
                     <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '1rem', flex: 1, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                      {mentor.bio}
+                      {mentor.portfolio?.introduction || mentor.bio}
                     </p>
                   )}
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                    {mentor.averageRating > 0 && (
-                      <span style={{ color: '#eab308', fontSize: '0.85rem', fontWeight: 600 }}>★ {mentor.averageRating}</span>
-                    )}
-                    {mentor.reviewCount > 0 && (
-                      <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>({mentor.reviewCount} reviews)</span>
+                    {mentor.reviewCount > 0 ? (
+                      <>
+                        <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.9rem' }}>
+                          {Number(mentor.averageRating || 0).toFixed(1)} / 5
+                        </span>
+                        <div style={{ position: 'relative', color: 'var(--border-subtle)', display: 'inline-block', fontSize: '1rem', letterSpacing: '2px' }}>
+                          ★★★★★
+                          <div style={{ position: 'absolute', top: 0, left: 0, overflow: 'hidden', whiteSpace: 'nowrap', width: `${Math.max(0, Math.min(100, (Number(mentor.averageRating) || 0) * 20))}%`, color: 'var(--warning)' }}>
+                            ★★★★★
+                          </div>
+                        </div>
+                        <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>({mentor.reviewCount} {mentor.reviewCount === 1 ? 'review' : 'reviews'})</span>
+                      </>
+                    ) : (
+                      <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No reviews yet</span>
                     )}
                   </div>
 
@@ -186,12 +220,12 @@ export default function MentorDiscovery() {
                     {mentor.experience && <div><strong>Industry:</strong> {mentor.experience} yrs</div>}
                     {mentor.teachingExperience && <div><strong>Teaching:</strong> {mentor.teachingExperience} yrs</div>}
                     {mentor.language && <div><strong>Lang:</strong> {mentor.language}</div>}
-                    {mentor.sessionFee != null && <div style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>Fee: ${mentor.sessionFee}/hr</div>}
+                    {mentor.sessionFee != null && <div style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>Fee: {formatCurrency(mentor.sessionFee)}/hr</div>}
                   </div>
 
                   <div style={{ display: 'flex', gap: '0.75rem', marginTop: 'auto' }}>
                     <Link to={`/student/mentor/${mentor.id}`} className="btn btn-primary" style={{ flex: 1, textAlign: 'center', padding: '0.5rem' }}>
-                      View Profile
+                      View Portfolio
                     </Link>
                   </div>
                 </div>

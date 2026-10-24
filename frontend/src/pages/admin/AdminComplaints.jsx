@@ -6,7 +6,7 @@ export default function AdminComplaints() {
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
+
   const [filterStatus, setFilterStatus] = useState('ALL');
 
   useEffect(() => {
@@ -24,8 +24,8 @@ export default function AdminComplaints() {
     fetchComplaints();
   }, []);
 
-  const filteredComplaints = filterStatus === 'ALL' 
-    ? complaints 
+  const filteredComplaints = filterStatus === 'ALL'
+    ? complaints
     : complaints.filter(c => c.status === filterStatus);
 
   if (loading) return <div className="page-content">Loading complaints...</div>;
@@ -39,14 +39,15 @@ export default function AdminComplaints() {
         </div>
       </div>
 
-      {error && <div style={{ color: '#ef4444', marginBottom: '1rem' }}>{error}</div>}
+      {error && <div style={{ color: 'var(--error)', background: 'var(--error-bg)', border: '1px solid var(--error-border)', padding: '0.75rem', borderRadius: 'var(--radius-md)', marginBottom: '1rem' }}>{error}</div>}
 
       <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
         <span style={{ color: 'var(--text-secondary)' }}>Filter Status:</span>
-        <select 
-          value={filterStatus} 
+        <select
+          value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
-          style={{ padding: '0.5rem', borderRadius: '4px', background: 'rgba(0,0,0,0.2)', color: 'white', border: '1px solid var(--border-subtle)' }}
+          className="form-input"
+          style={{ maxWidth: '200px' }}
         >
           <option value="ALL">All Statuses</option>
           <option value="OPEN">Open</option>
@@ -62,7 +63,7 @@ export default function AdminComplaints() {
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
+              <tr style={{ borderBottom: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', background: 'var(--bg-surface-elevated)' }}>
                 <th style={{ padding: '1rem' }}>Date</th>
                 <th style={{ padding: '1rem' }}>Reporter</th>
                 <th style={{ padding: '1rem' }}>Reported User</th>
@@ -73,20 +74,23 @@ export default function AdminComplaints() {
             </thead>
             <tbody>
               {filteredComplaints.map(c => (
-                <tr key={c.id} style={{ borderBottom: '1px solid var(--border-subtle)', background: 'rgba(255,255,255,0.02)' }}>
+                <tr key={c.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                   <td style={{ padding: '1rem', color: 'var(--text-primary)' }}>{new Date(c.createdAt).toLocaleDateString()}</td>
-                  <td style={{ padding: '1rem', color: 'var(--text-primary)' }}>{c.reporter?.name}</td>
-                  <td style={{ padding: '1rem', color: 'var(--text-primary)' }}>{c.reportedUser?.name}</td>
-                  <td style={{ padding: '1rem', color: 'var(--text-primary)' }}>{c.category.replace('_', ' ')}</td>
+                  <td style={{ padding: '1rem', color: 'var(--text-primary)', fontWeight: 600 }}>{c.reporter?.name}</td>
+                  <td style={{ padding: '1rem', color: 'var(--text-primary)', fontWeight: 600 }}>{c.reportedUser?.name}</td>
+                  <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>{c.category.replace('_', ' ')}</td>
                   <td style={{ padding: '1rem' }}>
-                    <span style={{ 
-                      padding: '0.25rem 0.75rem', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold',
-                      background: c.status === 'OPEN' ? 'rgba(59, 130, 246, 0.1)' : 
-                                  c.status === 'UNDER_REVIEW' ? 'rgba(245, 158, 11, 0.1)' : 
-                                  c.status === 'RESOLVED' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(107, 114, 128, 0.1)',
-                      color: c.status === 'OPEN' ? '#3b82f6' : 
-                             c.status === 'UNDER_REVIEW' ? '#f59e0b' : 
-                             c.status === 'RESOLVED' ? '#10b981' : '#9ca3af'
+                    <span style={{
+                      padding: '0.25rem 0.75rem', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 600,
+                      background: c.status === 'OPEN' ? 'var(--info-bg)' :
+                                  c.status === 'UNDER_REVIEW' ? 'var(--warning-bg)' :
+                                  c.status === 'RESOLVED' ? 'var(--success-bg)' : 'var(--bg-surface-elevated)',
+                      color: c.status === 'OPEN' ? 'var(--info)' :
+                             c.status === 'UNDER_REVIEW' ? 'var(--warning)' :
+                             c.status === 'RESOLVED' ? 'var(--success)' : 'var(--text-muted)',
+                      border: c.status === 'OPEN' ? '1px solid var(--info-border)' :
+                              c.status === 'UNDER_REVIEW' ? '1px solid var(--warning-border)' :
+                              c.status === 'RESOLVED' ? '1px solid var(--success-border)' : '1px solid var(--border-subtle)'
                     }}>
                       {c.status.replace('_', ' ')}
                     </span>

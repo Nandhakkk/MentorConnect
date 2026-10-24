@@ -1,6 +1,8 @@
 const prisma = require('../config/db');
 const notificationService = require('../services/notificationService');
 const { isApprovedMentor, isMentorParticipant, isStudentParticipant } = require('../utils/mentorCapability');
+const guardianService = require('../services/guardianService');
+const emailService = require('../services/emailService');
 
 /**
  * Helper to get the day of the week from a date object
@@ -19,6 +21,27 @@ const parseTime = (timeStr) => {
 };
 
 /**
+ * Helper to dynamically check if a scheduled session is missed/expired
+ */
+const evaluateSessionStatus = (session) => {
+  // Only evaluate as MISSED if the session was confirmed (paid or zero amount)
+  const isPaid = !session.payment || session.payment.amount === 0 || session.payment.status === 'PAID';
+  if (session && session.status === 'SCHEDULED' && isPaid) {
+    const now = new Date();
+    const sessionEnd = new Date(new Date(session.scheduledAt).getTime() + session.duration * 60000);
+    if (now > sessionEnd) {
+      session.status = 'MISSED';
+      // Fire-and-forget update
+      prisma.session.update({
+        where: { id: session.id },
+        data: { status: 'MISSED' }
+      }).catch(err => console.error('Failed to auto-update MISSED status:', err));
+    }
+  }
+  return session;
+};
+
+/**
  * GET /api/sessions
  * Returns sessions for the authenticated user based on their profile.
  * Peer mentors with role=STUDENT can see sessions from both learner and mentor perspectives.
@@ -26,12 +49,18 @@ const parseTime = (timeStr) => {
 const getSessions = async (req, res) => {
   try {
     const { role } = req.user;
-    
+
     let whereClause = {};
     if (role === 'STUDENT') {
-      const studentProfile = req.user.studentProfile;
+      let studentProfile = req.user.studentProfile;
       const mentorProfile = req.user.mentorProfile;
-      
+
+      if (!studentProfile) {
+        studentProfile = await prisma.studentProfile.findUnique({
+          where: { userId: req.user.id }
+        });
+      }
+
       if (!studentProfile && !mentorProfile) {
         return res.status(403).json({ status: 'error', message: 'Profile required.' });
       }
@@ -65,18 +94,35 @@ const getSessions = async (req, res) => {
       return res.status(403).json({ status: 'error', message: 'Unauthorized role.' });
     }
 
-    const sessions = await prisma.session.findMany({
-      where: whereClause,
+    // Filter to ensure only confirmed (paid or free) sessions are returned in lists
+    const paymentConfirmedFilter = {
+      OR: [
+        { payment: null },
+        { payment: { amount: 0 } },
+        { payment: { status: 'PAID' } }
+      ]
+    };
+
+    let sessions = await prisma.session.findMany({
+      where: {
+        AND: [
+          whereClause,
+          paymentConfirmedFilter
+        ]
+      },
       include: {
         mentorship: {
           include: {
             mentor: { include: { user: { select: { name: true, email: true } } } },
             student: { include: { user: { select: { name: true, email: true } } } }
           }
-        }
+        },
+        payment: true
       },
       orderBy: { scheduledAt: 'asc' }
     });
+
+    sessions = sessions.map(evaluateSessionStatus);
 
     return res.status(200).json({ status: 'success', sessions });
   } catch (err) {
@@ -94,7 +140,21 @@ const createSession = async (req, res) => {
       return res.status(403).json({ status: 'error', message: 'Only STUDENTS can book sessions.' });
     }
 
-    const studentProfile = req.user.studentProfile;
+    let studentProfile = req.user.studentProfile;
+    if (!studentProfile) {
+      studentProfile = await prisma.studentProfile.findUnique({
+        where: { userId: req.user.id }
+      });
+    }
+    if (!studentProfile && req.user.role === 'STUDENT') {
+      studentProfile = await prisma.studentProfile.create({
+        data: { userId: req.user.id }
+      });
+    }
+    if (!studentProfile) {
+      return res.status(404).json({ status: 'error', message: 'Student profile not found.' });
+    }
+
     const { mentorshipId, scheduledAt, duration, topic } = req.body;
 
     if (!mentorshipId || !scheduledAt || !duration || !topic) {
@@ -106,11 +166,17 @@ const createSession = async (req, res) => {
       return res.status(400).json({ status: 'error', message: 'Invalid scheduledAt date format.' });
     }
 
+    const MIN_BOOKING_LEAD_HOURS = 6;
     const nowKolkataDateStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
     const scheduledDateStr = scheduledDate.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
-    
+
     if (scheduledDateStr < nowKolkataDateStr) {
       return res.status(400).json({ status: 'error', message: 'Cannot book a session on a past date.' });
+    }
+
+    const leadTimeMs = scheduledDate.getTime() - Date.now();
+    if (leadTimeMs < MIN_BOOKING_LEAD_HOURS * 60 * 60 * 1000) {
+      return res.status(400).json({ status: 'error', message: 'Sessions must be booked at least 6 hours in advance.' });
     }
 
     // 1 & 2 & 3. Verify mentorship ownership and active status
@@ -133,7 +199,7 @@ const createSession = async (req, res) => {
     if (!mentor.isAvailable || mentor.user.isSuspended || mentor.status !== 'APPROVED') {
       return res.status(400).json({ status: 'error', message: 'Mentor is currently unavailable or not eligible for new sessions.' });
     }
-    
+
     // 4.1 Validate duration
     const dur = parseInt(duration, 10);
     if (isNaN(dur) || dur <= 0 || dur > 480) {
@@ -145,7 +211,7 @@ const createSession = async (req, res) => {
     const istString = scheduledDate.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
     const istDate = new Date(istString);
     const dayOfWeek = getDayOfWeekString(istDate);
-    
+
     const scheduledHours = istDate.getHours();
     const scheduledMinutes = istDate.getMinutes();
     const startMins = scheduledHours * 60 + scheduledMinutes;
@@ -154,10 +220,10 @@ const createSession = async (req, res) => {
     const isWithinSlot = mentor.availabilities.some(slot => {
       if (slot.dayOfWeek.toUpperCase() !== dayOfWeek) return false;
       if (!slot.isActive) return false;
-      
+
       const slotStart = parseTime(slot.startTime);
       const slotEnd = parseTime(slot.endTime);
-      
+
       return startMins >= slotStart && endMins <= slotEnd;
     });
 
@@ -168,7 +234,7 @@ const createSession = async (req, res) => {
     // 6. Check for conflicting sessions for this mentor
     // We need to ensure that the mentor doesn't have another session overlapping.
     const scheduledEnd = new Date(scheduledDate.getTime() + dur * 60000);
-    
+
     const conflictingSessions = await prisma.session.findMany({
       where: {
         mentorship: { mentorId: mentor.id },
@@ -178,15 +244,23 @@ const createSession = async (req, res) => {
     });
 
     const hasConflict = conflictingSessions.some(sess => {
-      // Ignore unpaid abandoned carts (older than 15 minutes)
+      // Ignore cancelled sessions
+      if (sess.status === 'CANCELLED') return false;
+
+      // If unpaid:
       if (sess.payment && sess.payment.amount > 0 && sess.payment.status !== 'PAID') {
+        // If payment was cancelled or failed, slot is released immediately
+        if (sess.payment.status === 'CANCELLED' || sess.payment.status === 'FAILED') {
+          return false;
+        }
+        // Active payment window: keep slot reserved temporarily up to 15 minutes
         const ageMinutes = (new Date() - new Date(sess.createdAt)) / 60000;
         if (ageMinutes > 15) return false;
       }
-      
+
       const sessStart = new Date(sess.scheduledAt);
       const sessEnd = new Date(sessStart.getTime() + sess.duration * 60000);
-      
+
       // Overlap logic: start < otherEnd AND end > otherStart
       return scheduledDate < sessEnd && scheduledEnd > sessStart;
     });
@@ -243,7 +317,7 @@ const getSessionById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const session = await prisma.session.findUnique({
+    let session = await prisma.session.findUnique({
       where: { id },
       include: {
         mentorship: {
@@ -251,7 +325,8 @@ const getSessionById = async (req, res) => {
             mentor: { include: { user: { select: { name: true, email: true } } } },
             student: { include: { user: { select: { name: true, email: true } } } }
           }
-        }
+        },
+        payment: true
       }
     });
 
@@ -259,8 +334,10 @@ const getSessionById = async (req, res) => {
       return res.status(404).json({ status: 'error', message: 'Session not found.' });
     }
 
+    session = evaluateSessionStatus(session);
+
     // Check authorization via profile IDs (supports peer mentors)
-    const isAuthorized = 
+    const isAuthorized =
       isStudentParticipant(req.user, session.mentorship.studentId) ||
       isMentorParticipant(req.user, session.mentorship.mentorId);
 
@@ -290,7 +367,8 @@ const cancelSession = async (req, res) => {
             mentor: { include: { user: { select: { id: true, name: true } } } },
             student: { include: { user: { select: { id: true, name: true } } } }
           }
-        }
+        },
+        payment: true
       }
     });
 
@@ -298,7 +376,7 @@ const cancelSession = async (req, res) => {
       return res.status(404).json({ status: 'error', message: 'Session not found.' });
     }
 
-    const isAuthorized = 
+    const isAuthorized =
       isStudentParticipant(req.user, session.mentorship.studentId) ||
       isMentorParticipant(req.user, session.mentorship.mentorId);
 
@@ -306,39 +384,70 @@ const cancelSession = async (req, res) => {
       return res.status(403).json({ status: 'error', message: 'Access denied.' });
     }
 
-    const updated = await prisma.session.update({
-      where: { id },
-      data: { status: 'CANCELLED' }
-    });
-
-    const scheduledTime = new Date(session.scheduledAt).toLocaleString();
-    const isCancelledByStudent = isStudentParticipant(req.user, session.mentorship.studentId);
-
-    if (isCancelledByStudent) {
-      // Notify mentor
-      await notificationService.createNotification(
-        session.mentorship.mentor.userId,
-        'GENERAL',
-        'Session Cancelled',
-        `Your mentoring session scheduled for ${scheduledTime} has been cancelled by the student.`,
-        session.id,
-        'SESSION'
-      );
-    } else {
-      // Notify student
-      await notificationService.createNotification(
-        session.mentorship.student.userId,
-        'GENERAL',
-        'Session Cancelled',
-        `Your mentoring session scheduled for ${scheduledTime} has been cancelled by the mentor.`,
-        session.id,
-        'SESSION'
-      );
+    if (session.status === 'CANCELLED') {
+      return res.status(200).json({ status: 'success', message: 'Session already cancelled.', session });
     }
 
-    return res.status(200).json({ status: 'success', message: 'Session cancelled.', session: updated });
+    const isCancelledByStudent = isStudentParticipant(req.user, session.mentorship.studentId);
+    const refundService = require('../services/refundService');
+
+    let result;
+    if (isCancelledByStudent) {
+      result = await refundService.handleStudentSessionCancellation(id, req.user, req.body.reason);
+    } else {
+      result = await refundService.handleMentorSessionCancellation(id, req.user, req.body.reason);
+    }
+
+    const isPaid = session.payment && (session.payment.status === 'PAID' || session.payment.amount === 0);
+
+    // Only dispatch cancellation notifications if the session was confirmed/paid
+    if (isPaid) {
+      const scheduledTime = new Date(session.scheduledAt).toLocaleString();
+
+      if (isCancelledByStudent) {
+        // Notify mentor
+        await notificationService.createNotification(
+          session.mentorship.mentor.userId,
+          'GENERAL',
+          'Session Cancelled',
+          `Your mentoring session scheduled for ${scheduledTime} has been cancelled by the student.`,
+          session.id,
+          'SESSION'
+        );
+      } else {
+        // Notify student
+        await notificationService.createNotification(
+          session.mentorship.student.userId,
+          'GENERAL',
+          'Session Cancelled',
+          `Your mentoring session scheduled for ${scheduledTime} has been cancelled by the mentor.`,
+          session.id,
+          'SESSION'
+        );
+      }
+
+      // Notify guardian if applicable
+      const kolkataScheduled = emailService.formatKolkataDateTime(session.scheduledAt);
+      await guardianService.notifyGuardianEvent(
+        session.mentorship.student.userId,
+        'SESSION',
+        {
+          title: 'Session Cancelled',
+          message: `The mentoring session "${session.topic || 'Mentoring Session'}" scheduled for ${kolkataScheduled} has been cancelled (${isCancelledByStudent ? 'by the student' : 'by the mentor'}).`,
+          referenceId: session.id,
+          referenceType: 'SESSION'
+        }
+      ).catch(err => console.error('Guardian session cancel notification error:', err.message));
+    }
+
+    return res.status(200).json({
+      status: 'success',
+      message: result.message || 'Session cancelled.',
+      session: result.session,
+      refund: result.refund
+    });
   } catch (err) {
-    return res.status(500).json({ status: 'error', message: 'Failed to cancel session.', details: err.message });
+    return res.status(err.statusCode || 500).json({ status: 'error', message: err.message || 'Failed to cancel session.', details: err.message });
   }
 };
 
@@ -349,7 +458,7 @@ const cancelSession = async (req, res) => {
 const completeSession = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     // Use capability check instead of role check
     if (!isApprovedMentor(req.user)) {
       return res.status(403).json({ status: 'error', message: 'Only approved mentors can complete sessions.' });
@@ -357,8 +466,10 @@ const completeSession = async (req, res) => {
 
     const session = await prisma.session.findUnique({
       where: { id },
-      include: { 
-        mentorship: true,
+      include: {
+        mentorship: {
+          include: { student: true, mentor: { include: { user: true } } }
+        },
         payment: { include: { payout: true } }
       }
     });
@@ -375,8 +486,21 @@ const completeSession = async (req, res) => {
       return res.status(400).json({ status: 'error', message: 'Session is already completed.' });
     }
 
-    if (session.status !== 'SCHEDULED') {
+    if (session.status === 'CANCELLED') {
+      return res.status(400).json({ status: 'error', message: 'Cancelled sessions cannot be completed.' });
+    }
+
+    if (session.status !== 'SCHEDULED' && session.status !== 'MISSED') {
       return res.status(400).json({ status: 'error', message: 'Only scheduled sessions can be completed.' });
+    }
+
+    // Validate that the session scheduled end time has passed
+    const sessionEnd = new Date(new Date(session.scheduledAt).getTime() + (session.duration || 0) * 60000);
+    if (new Date() < sessionEnd) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Cannot mark session as completed before its scheduled end time.'
+      });
     }
 
     if (!session.payment || session.payment.status !== 'PAID') {
@@ -404,6 +528,27 @@ const completeSession = async (req, res) => {
       }
       return sess;
     });
+
+    // Notify student and guardian
+    await notificationService.createNotification(
+      session.mentorship.student.userId,
+      'GENERAL',
+      'Session Completed',
+      `Your mentoring session "${session.topic || 'Mentoring Session'}" has been marked as completed.`,
+      session.id,
+      'SESSION'
+    );
+
+    await guardianService.notifyGuardianEvent(
+      session.mentorship.student.userId,
+      'SESSION',
+      {
+        title: 'Session Completed',
+        message: `The mentoring session "${session.topic || 'Mentoring Session'}" with mentor ${session.mentorship.mentor.user.name} has been completed successfully.`,
+        referenceId: session.id,
+        referenceType: 'SESSION'
+      }
+    ).catch(err => console.error('Guardian session complete notification error:', err.message));
 
     return res.status(200).json({ status: 'success', message: 'Session marked as completed and payout eligible.', session: updated });
   } catch (err) {
@@ -436,8 +581,10 @@ const getLiveSession = async (req, res) => {
       return res.status(404).json({ status: 'error', message: 'Session not found.' });
     }
 
+    session = evaluateSessionStatus(session);
+
     // Check authorization via profile IDs
-    const isAuthorized = 
+    const isAuthorized =
       isStudentParticipant(req.user, session.mentorship.studentId) ||
       isMentorParticipant(req.user, session.mentorship.mentorId);
 
@@ -448,7 +595,10 @@ const getLiveSession = async (req, res) => {
     if (session.status === 'CANCELLED') {
       return res.status(403).json({ joinAllowed: false, reason: 'SESSION_CANCELLED' });
     }
-    
+    if (session.status === 'MISSED') {
+      return res.status(403).json({ joinAllowed: false, reason: 'SESSION_MISSED' });
+    }
+
     if (session.payment?.status !== 'PAID') {
       return res.status(403).json({ joinAllowed: false, reason: 'PAYMENT_REQUIRED' });
     }
@@ -457,7 +607,7 @@ const getLiveSession = async (req, res) => {
     const now = new Date();
     const sessionStart = new Date(session.scheduledAt);
     const sessionEnd = new Date(sessionStart.getTime() + session.duration * 60000);
-    
+
     // Allow joining 10 minutes before start
     const allowedJoinStart = new Date(sessionStart.getTime() - 10 * 60000);
 
@@ -469,8 +619,8 @@ const getLiveSession = async (req, res) => {
       return res.status(200).json({ joinAllowed: false, reason: 'SESSION_ENDED' });
     }
 
-    return res.status(200).json({ 
-      joinAllowed: true, 
+    return res.status(200).json({
+      joinAllowed: true,
       meetingLink: session.meetingLink,
       sessionDetails: {
         id: session.id,

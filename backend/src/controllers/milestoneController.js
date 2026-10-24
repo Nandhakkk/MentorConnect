@@ -1,4 +1,5 @@
 const prisma = require('../config/db');
+const guardianService = require('../services/guardianService');
 
 /**
  * Helper: Resolve the StudentProfile for the authenticated user.
@@ -143,6 +144,20 @@ const updateMilestone = async (req, res) => {
         status: status || existing.status
       }
     });
+
+    // Notify guardian if milestone just marked as COMPLETED
+    if (status === 'COMPLETED' && existing.status !== 'COMPLETED') {
+      guardianService.notifyGuardianEvent(
+        req.user.id,
+        'PROGRESS',
+        {
+          title: 'Milestone Completed!',
+          message: `The milestone "${milestone.title}" under goal "${existing.goal?.title || 'Learning Goal'}" was completed.`,
+          referenceId: milestone.id,
+          referenceType: 'MILESTONE'
+        }
+      ).catch(err => console.error('Guardian milestone notification error:', err.message));
+    }
 
     return res.status(200).json({ status: 'success', message: 'Milestone updated successfully.', milestone });
   } catch (err) {

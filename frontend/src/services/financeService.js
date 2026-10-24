@@ -24,6 +24,24 @@ export async function fetchAdminFinanceSummary(token) {
   return data;
 }
 
+export async function fetchAdminFinanceTrend(token) {
+  const response = await fetch(`${API_BASE_URL}/finance/admin/trend`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to fetch finance trend');
+  return data.trend;
+}
+
+export async function fetchAdminTransactions(token) {
+  const response = await fetch(`${API_BASE_URL}/finance/admin/transactions`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to fetch transactions');
+  return data.transactions;
+}
+
 /**
  * Admin: Get Payouts
  */

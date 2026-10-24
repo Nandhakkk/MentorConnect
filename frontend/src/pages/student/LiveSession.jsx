@@ -110,7 +110,7 @@ export default function LiveSession() {
     <div className="page-content">
        <BackLink to="/student/sessions">Back to Sessions</BackLink>
        <div className="glass-card" style={{ padding: '2rem', textAlign: 'center', marginTop: '2rem' }}>
-         <h2 style={{ color: '#ef4444' }}>Cannot Join Session</h2>
+         <h2 style={{ color: 'var(--error)' }}>Cannot Join Session</h2>
          <p style={{ color: 'var(--text-secondary)' }}>{error}</p>
          <button onClick={() => navigate('/student/sessions')} className="btn btn-primary" style={{ marginTop: '1.5rem' }}>View All Sessions</button>
        </div>
@@ -121,18 +121,18 @@ export default function LiveSession() {
     <div className="page-content" style={{ maxWidth: '1200px' }}>
       <BackLink to="/student/sessions">Leave Session</BackLink>
       
-      <div style={{ marginBottom: '1.5rem', padding: '1.5rem', background: 'rgba(99, 102, 241, 0.1)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: '8px' }}>
+      <div style={{ marginBottom: '1.5rem', padding: '1.5rem', background: 'var(--info-bg)', border: '1px solid var(--border-subtle)', borderRadius: '8px' }}>
         <h2 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>Live Session: {sessionData.sessionDetails.topic}</h2>
         <div style={{ display: 'flex', gap: '2rem', color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
-          <span>Mentor: <strong style={{ color: 'white' }}>{sessionData.sessionDetails.mentor.name}</strong></span>
-          <span>Student: <strong style={{ color: 'white' }}>{sessionData.sessionDetails.student.name}</strong></span>
-          <span>Time: <strong style={{ color: 'white' }}>{new Date(sessionData.sessionDetails.scheduledAt).toLocaleTimeString()}</strong></span>
+          <span>Mentor: <strong style={{ color: 'var(--text-primary)' }}>{sessionData.sessionDetails.mentor.name}</strong></span>
+          <span>Student: <strong style={{ color: 'var(--text-primary)' }}>{sessionData.sessionDetails.student.name}</strong></span>
+          <span>Time: <strong style={{ color: 'var(--text-primary)' }}>{new Date(sessionData.sessionDetails.scheduledAt).toLocaleTimeString()}</strong></span>
         </div>
       </div>
       
       {user?.dateOfBirth && getAgeCategory(user.dateOfBirth) !== 'ADULT' && (
-        <div style={{ marginBottom: '1.5rem', padding: '1rem', background: 'rgba(245, 158, 11, 0.1)', borderLeft: '4px solid #f59e0b', borderRadius: '4px' }}>
-          <h4 style={{ margin: '0 0 0.5rem 0', color: '#f59e0b' }}>Safety Reminder for Minors</h4>
+        <div style={{ marginBottom: '1.5rem', padding: '1rem', background: 'var(--warning-bg)', borderLeft: '4px solid var(--warning)', borderRadius: '4px' }}>
+          <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--warning)' }}>Safety Reminder for Minors</h4>
           <p style={{ margin: 0, color: 'var(--text-secondary)' }}>
             {getAgeCategory(user.dateOfBirth) === 'YOUNGER_MINOR' 
               ? "Ensure your parent or guardian is nearby or aware that you are joining this session. Do not turn on your camera if you are uncomfortable, and never share personal information."

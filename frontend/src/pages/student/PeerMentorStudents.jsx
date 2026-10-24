@@ -44,17 +44,17 @@ export default function PeerMentorStudents() {
         </div>
       </div>
 
-      {error && <div style={{ color: '#ef4444', marginBottom: '1rem' }}>{error}</div>}
+      {error && <div style={{ color: 'var(--error)', marginBottom: '1rem' }}>{error}</div>}
 
       {loading ? <div>Loading...</div> : (
         <>
           {pending.length > 0 && (
             <div style={{ marginBottom: '2rem' }}>
-              <h3 style={{ marginBottom: '1rem', color: '#f59e0b' }}>Pending Requests ({pending.length})</h3>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--warning)' }}>Pending Requests ({pending.length})</h3>
               {pending.map(m => (
                 <div key={m.id} className="glass-card" style={{ padding: '1.25rem', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                   <div>
-                    <strong>{m.student?.user?.name || 'Student'}</strong>
+                    <strong style={{ color: 'var(--text-primary)' }}>{m.student?.user?.name || 'Student'}</strong>
                     <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{m.student?.user?.email}</div>
                   </div>
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -68,14 +68,14 @@ export default function PeerMentorStudents() {
 
           {active.length > 0 && (
             <div style={{ marginBottom: '2rem' }}>
-              <h3 style={{ marginBottom: '1rem', color: '#10b981' }}>Active Mentorships ({active.length})</h3>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--success)' }}>Active Mentorships ({active.length})</h3>
               {active.map(m => (
                 <div key={m.id} className="glass-card" style={{ padding: '1.25rem', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
-                    <strong>{m.student?.user?.name || 'Student'}</strong>
+                    <strong style={{ color: 'var(--text-primary)' }}>{m.student?.user?.name || 'Student'}</strong>
                     <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Active since {new Date(m.startedAt).toLocaleDateString()}</div>
                   </div>
-                  <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>Active</span>
+                  <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem', borderRadius: '12px', background: 'var(--success-subtle)', color: 'var(--success)' }}>Active</span>
                 </div>
               ))}
             </div>

@@ -19,7 +19,8 @@ const generateToken = (userId, role) => {
  */
 const register = async (req, res) => {
   try {
-    const { name, email, password, role, dateOfBirth } = req.body;
+    const { name, email, password, role, dateOfBirth, goal, careerGoal } = req.body;
+    const initialGoal = (goal || careerGoal || '').trim();
 
     // 1. Validate required fields
     if (!name || !email || !password || !role) {
@@ -98,7 +99,13 @@ const register = async (req, res) => {
         role: normalizedRole,
         dateOfBirth: parsedDob,
         // Automatically create associated profile
-        ...(normalizedRole === 'STUDENT' ? { studentProfile: { create: {} } } : {}),
+        ...(normalizedRole === 'STUDENT' ? {
+          studentProfile: {
+            create: {
+              careerGoal: initialGoal || undefined
+            }
+          }
+        } : {}),
         ...(normalizedRole === 'MENTOR' ? { mentorProfile: { create: {} } } : {})
       },
       include: {
@@ -106,6 +113,18 @@ const register = async (req, res) => {
         mentorProfile: true
       }
     });
+
+    // If an initial goal was provided for a student, create the Goal record linked to studentProfile.id
+    if (normalizedRole === 'STUDENT' && newUser.studentProfile && initialGoal) {
+      await prisma.goal.create({
+        data: {
+          studentId: newUser.studentProfile.id,
+          title: initialGoal,
+          description: 'Initial learning goal set during registration.',
+          status: 'ACTIVE'
+        }
+      });
+    }
 
     // 8. Generate JWT token
     const token = generateToken(newUser.id, newUser.role);
@@ -116,6 +135,13 @@ const register = async (req, res) => {
       name: newUser.name,
       email: newUser.email,
       role: newUser.role,
+      dateOfBirth: newUser.dateOfBirth,
+      phone: newUser.phone || null,
+      profileImage: newUser.profileImage || null,
+      isEmailVerified: Boolean(newUser.isEmailVerified),
+      emailVerifiedAt: newUser.emailVerifiedAt || null,
+      pendingEmail: newUser.pendingEmail || null,
+      emailVerificationPending: false,
       studentProfile: newUser.studentProfile || null,
       mentorProfile: newUser.mentorProfile || null,
       createdAt: newUser.createdAt
@@ -182,12 +208,25 @@ const login = async (req, res) => {
     // 4. Generate JWT token
     const token = generateToken(user.id, user.role);
 
+    const emailVerificationPending = Boolean(
+      user.pendingEmail &&
+      user.emailOtpExpiry &&
+      new Date() < new Date(user.emailOtpExpiry)
+    );
+
     // 5. Format response (never expose password)
     const userResponse = {
       id: user.id,
       name: user.name,
       email: user.email,
       role: user.role,
+      dateOfBirth: user.dateOfBirth,
+      phone: user.phone || null,
+      profileImage: user.profileImage || null,
+      isEmailVerified: Boolean(user.isEmailVerified),
+      emailVerifiedAt: user.emailVerifiedAt || null,
+      pendingEmail: user.pendingEmail || null,
+      emailVerificationPending,
       studentProfile: user.studentProfile || null,
       mentorProfile: user.mentorProfile || null,
       createdAt: user.createdAt
@@ -218,11 +257,24 @@ const getCurrentUser = async (req, res) => {
   try {
     const user = req.user;
 
+    const emailVerificationPending = Boolean(
+      user.pendingEmail &&
+      user.emailOtpExpiry &&
+      new Date() < new Date(user.emailOtpExpiry)
+    );
+
     const userResponse = {
       id: user.id,
       name: user.name,
       email: user.email,
       role: user.role,
+      dateOfBirth: user.dateOfBirth,
+      phone: user.phone || null,
+      profileImage: user.profileImage || null,
+      isEmailVerified: Boolean(user.isEmailVerified),
+      emailVerifiedAt: user.emailVerifiedAt || null,
+      pendingEmail: user.pendingEmail || null,
+      emailVerificationPending,
       studentProfile: user.studentProfile || null,
       mentorProfile: user.mentorProfile || null,
       createdAt: user.createdAt,

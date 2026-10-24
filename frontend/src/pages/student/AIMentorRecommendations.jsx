@@ -54,7 +54,7 @@ export default function AIMentorRecommendations() {
         </p>
 
         {error && (
-          <div style={{ color: '#ef4444', marginBottom: '1.5rem', padding: '1rem', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '8px' }}>
+          <div style={{ color: 'var(--error)', marginBottom: '1.5rem', padding: '1rem', background: 'var(--error-subtle)', border: '1px solid var(--error)', borderRadius: '8px' }}>
             {error}
           </div>
         )}
@@ -99,9 +99,9 @@ export default function AIMentorRecommendations() {
                         borderRadius: '16px', 
                         fontSize: '0.85rem', 
                         fontWeight: 'bold',
-                        background: rec.compatibility === 'HIGH' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-                        color: rec.compatibility === 'HIGH' ? '#10b981' : '#f59e0b',
-                        border: `1px solid ${rec.compatibility === 'HIGH' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`
+                        background: rec.compatibility === 'HIGH' ? 'var(--success-subtle)' : 'var(--warning-subtle)',
+                        color: rec.compatibility === 'HIGH' ? 'var(--success)' : 'var(--warning)',
+                        border: `1px solid ${rec.compatibility === 'HIGH' ? 'var(--success)' : 'var(--warning)'}`
                       }}>
                         {rec.compatibility} MATCH
                       </div>
@@ -127,7 +127,7 @@ export default function AIMentorRecommendations() {
                   </div>
 
                   {/* Right Column: Mentor Profile Summary */}
-                  <div style={{ flex: '1 1 300px', background: 'rgba(0,0,0,0.2)', padding: '1.5rem', borderRadius: '12px' }}>
+                  <div style={{ flex: '1 1 300px', background: 'var(--bg-surface-elevated)', border: '1px solid var(--border-subtle)', padding: '1.5rem', borderRadius: '12px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
                       <div style={{ 
                         width: '50px', height: '50px', borderRadius: '50%', background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)', 
@@ -136,9 +136,9 @@ export default function AIMentorRecommendations() {
                         {mentor.user.name.charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <h3 style={{ margin: 0, fontSize: '1.25rem' }}>{mentor.user.name}</h3>
+                        <h3 style={{ margin: 0, fontSize: '1.25rem', color: 'var(--text-primary)' }}>{mentor.user.name}</h3>
                         <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{mentor.expertise}</div>
-                        <div style={{ marginTop: '0.25rem', fontSize: '0.85rem', color: '#eab308' }}>
+                        <div style={{ marginTop: '0.25rem', fontSize: '0.85rem', color: 'var(--warning)' }}>
                           {mentor.reviewCount > 0 ? (
                             <>★ {mentor.averageRating} <span style={{ color: 'var(--text-muted)' }}>({mentor.reviewCount} reviews)</span></>
                           ) : (
@@ -150,7 +150,7 @@ export default function AIMentorRecommendations() {
 
                     <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
                       {mentor.topics?.slice(0, 3).map((t, idx) => (
-                        <span key={idx} style={{ background: 'rgba(99, 102, 241, 0.1)', padding: '0.2rem 0.6rem', borderRadius: '12px', fontSize: '0.75rem', color: '#818cf8' }}>
+                        <span key={idx} style={{ background: 'var(--purple-subtle)', padding: '0.2rem 0.6rem', borderRadius: '12px', fontSize: '0.75rem', color: 'var(--purple)' }}>
                           {t.topic?.name}
                         </span>
                       ))}
@@ -158,13 +158,13 @@ export default function AIMentorRecommendations() {
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
                       <div>
-                        <span style={{ color: 'var(--text-muted)' }}>Experience:</span> <span style={{ color: 'white' }}>{mentor.experience} yrs</span>
+                        <span style={{ color: 'var(--text-muted)' }}>Experience:</span> <span style={{ color: 'var(--text-primary)' }}>{mentor.experience} yrs</span>
                       </div>
                       <div>
-                        <span style={{ color: 'var(--text-muted)' }}>Fee:</span> <span style={{ color: 'white' }}>${mentor.sessionFee}/hr</span>
+                        <span style={{ color: 'var(--text-muted)' }}>Fee:</span> <span style={{ color: 'var(--text-primary)' }}>${mentor.sessionFee}/hr</span>
                       </div>
                       <div>
-                        <span style={{ color: 'var(--text-muted)' }}>Language:</span> <span style={{ color: 'white' }}>{mentor.language || 'Any'}</span>
+                        <span style={{ color: 'var(--text-muted)' }}>Language:</span> <span style={{ color: 'var(--text-primary)' }}>{mentor.language || 'Any'}</span>
                       </div>
                     </div>
 

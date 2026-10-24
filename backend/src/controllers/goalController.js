@@ -180,10 +180,62 @@ const deleteGoal = async (req, res) => {
 
     await prisma.goal.delete({ where: { id: req.params.id } });
 
+    // If deleted goal matched student's careerGoal, clear it to avoid recreation
+    if (profile.careerGoal && profile.careerGoal.trim().toLowerCase() === existing.title.trim().toLowerCase()) {
+      await prisma.studentProfile.update({
+        where: { id: profile.id },
+        data: { careerGoal: null }
+      });
+    }
+
     return res.status(200).json({ status: 'success', message: 'Goal deleted successfully.' });
   } catch (err) {
     return res.status(500).json({ status: 'error', message: 'Failed to delete goal.', details: err.message });
   }
 };
 
-module.exports = { getGoals, getGoalById, createGoal, updateGoal, deleteGoal };
+/**
+ * Idempotently backfill missing registration goals for existing students.
+ * Finds student profiles with careerGoal populated where no Goal record matches.
+ */
+const syncMissingRegistrationGoals = async () => {
+  try {
+    const studentsWithCareerGoal = await prisma.studentProfile.findMany({
+      where: {
+        AND: [
+          { careerGoal: { not: null } },
+          { careerGoal: { not: '' } }
+        ]
+      },
+      include: { goals: true }
+    });
+
+    let createdCount = 0;
+    for (const student of studentsWithCareerGoal) {
+      const trimmedGoal = student.careerGoal.trim();
+      if (!trimmedGoal) continue;
+
+      const hasMatchingGoal = student.goals.some(
+        g => g.title.trim().toLowerCase() === trimmedGoal.toLowerCase()
+      );
+
+      if (!hasMatchingGoal) {
+        await prisma.goal.create({
+          data: {
+            studentId: student.id,
+            title: trimmedGoal,
+            description: 'Initial learning goal set during registration.',
+            status: 'ACTIVE'
+          }
+        });
+        createdCount++;
+      }
+    }
+    return createdCount;
+  } catch (err) {
+    console.error('[Goal Sync Error]:', err.message);
+    return 0;
+  }
+};
+
+module.exports = { getGoals, getGoalById, createGoal, updateGoal, deleteGoal, syncMissingRegistrationGoals };

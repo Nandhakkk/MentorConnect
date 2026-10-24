@@ -49,3 +49,23 @@ export async function getMentorRecommendations() {
   }
   return data;
 }
+
+/**
+ * Ask the Mentor AI Assistant a question.
+ * @param {string} question - The mentor's question
+ */
+export async function askMentorAI(question) {
+  const response = await fetch(`${API_BASE_URL}/ai/mentor-assist`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ question })
+  });
+
+  const data = await response.json();
+  if (!response.ok || !data.success) {
+    const error = new Error(data.error || 'Failed to get AI response');
+    error.status = response.status;
+    throw error;
+  }
+  return data.answer;
+}

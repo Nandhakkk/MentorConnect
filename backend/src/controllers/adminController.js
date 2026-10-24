@@ -1,6 +1,8 @@
 const prisma = require('../config/db');
 const notificationService = require('../services/notificationService');
+const aiService = require('../services/aiService');
 const { isMinor } = require('../utils/ageHelper');
+const guardianService = require('../services/guardianService');
 
 /**
  * GET /api/admin/dashboard-stats
@@ -12,8 +14,9 @@ const getDashboardStats = async (req, res) => {
     const totalStudents = await prisma.user.count({ where: { role: 'STUDENT' } });
     const totalMentors = await prisma.user.count({ where: { role: 'MENTOR' } });
     const activeMentorships = await prisma.mentorship.count({ where: { status: 'ACTIVE' } });
-    
+
     const recentUsers = await prisma.user.findMany({
+      where: { role: { not: 'ADMIN' } },
       take: 5,
       orderBy: { createdAt: 'desc' },
       select: {
@@ -57,18 +60,25 @@ const getDashboardStats = async (req, res) => {
 const getUsers = async (req, res) => {
   try {
     const { role, search } = req.query;
-    
-    let whereClause = {};
-    if (role && role !== 'ALL') {
-      whereClause.role = role;
-    } else {
-      whereClause.role = { not: 'ADMIN' };
-    }
-    
+
+    let whereClause = {
+      role: 'STUDENT',
+      NOT: {
+        mentorProfile: {
+          mentorType: 'PEER',
+          status: 'APPROVED'
+        }
+      }
+    };
+
     if (search) {
-      whereClause.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { email: { contains: search, mode: 'insensitive' } }
+      whereClause.AND = [
+        {
+          OR: [
+            { name: { contains: search, mode: 'insensitive' } },
+            { email: { contains: search, mode: 'insensitive' } }
+          ]
+        }
       ];
     }
 
@@ -96,7 +106,15 @@ const getUsers = async (req, res) => {
  */
 const getMentors = async (req, res) => {
   try {
+    const { type } = req.query;
+
+    let whereClause = {};
+    if (type) {
+      whereClause.mentorType = type;
+    }
+
     const mentors = await prisma.mentorProfile.findMany({
+      where: whereClause,
       include: {
         user: {
           select: {
@@ -105,6 +123,46 @@ const getMentors = async (req, res) => {
             email: true,
             createdAt: true
           }
+        },
+        applications: {
+          select: {
+            id: true,
+            status: true,
+            rejectionReason: true,
+            reviewNotes: true,
+            reviewedAt: true,
+            createdAt: true,
+            aiScreening: {
+              select: {
+                screeningStatus: true,
+                recommendation: true,
+                structuredFindings: true,
+                riskFlags: true
+              }
+            }
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 1
+        },
+        peerApplications: {
+          select: {
+            id: true,
+            status: true,
+            rejectionReason: true,
+            reviewNotes: true,
+            reviewedAt: true,
+            createdAt: true,
+            aiScreening: {
+              select: {
+                screeningStatus: true,
+                recommendation: true,
+                structuredFindings: true,
+                riskFlags: true
+              }
+            }
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 1
         }
       },
       orderBy: { createdAt: 'desc' }
@@ -118,14 +176,55 @@ const getMentors = async (req, res) => {
 
 /**
  * GET /api/admin/mentor-applications
- * Returns professional mentor applications.
+ * Returns professional mentor applications with optional queue or status filter.
  */
 const getMentorApplications = async (req, res) => {
   try {
-    const { status } = req.query;
-    
+    const { status, queue } = req.query;
+
     let whereClause = {};
-    if (status && status !== 'ALL') {
+    if (queue === 'ELIGIBLE') {
+      whereClause.OR = [
+        {
+          status: { in: ['AI_SCREENED', 'UNDER_REVIEW', 'PENDING'] },
+          aiScreening: {
+            recommendation: { in: ['STRONG_PASS', 'PASS', 'ELIGIBLE'] }
+          }
+        }
+      ];
+    } else if (queue === 'MANUAL_REVIEW') {
+      whereClause.OR = [
+        {
+          status: 'UNDER_REVIEW',
+          aiScreening: {
+            recommendation: { in: ['NEEDS_REVIEW', 'BORDERLINE', 'NEEDS_MANUAL_REVIEW'] }
+          }
+        },
+        {
+          status: { in: ['PENDING', 'AI_SCREENED'] },
+          aiScreening: {
+            recommendation: { in: ['NEEDS_REVIEW', 'BORDERLINE', 'NEEDS_MANUAL_REVIEW'] }
+          }
+        }
+      ];
+    } else if (queue === 'AUTO_REJECTED') {
+      whereClause.OR = [
+        {
+          status: 'REJECTED',
+          aiScreening: {
+            recommendation: { in: ['REJECT', 'AUTO_REJECTED'] }
+          }
+        },
+        {
+          status: 'REJECTED',
+          rejectionReason: { contains: 'Auto-Rejected' }
+        },
+        {
+          status: 'REJECTED',
+          rejectionReason: { contains: 'objective criteria' }
+        }
+      ];
+    } else if (status && status !== 'ALL') {
       whereClause.status = status;
     }
 
@@ -135,7 +234,8 @@ const getMentorApplications = async (req, res) => {
         mentor: {
           include: { user: { select: { name: true, email: true } } }
         },
-        aiScreening: true
+        aiScreening: true,
+        credentials: true
       },
       orderBy: { createdAt: 'desc' }
     });
@@ -150,15 +250,35 @@ const getMentorApplications = async (req, res) => {
  * GET /api/admin/mentor-applications/:id
  * Returns detailed application view.
  */
+/**
+ * GET /api/admin/mentor-applications/:id
+ * Returns detailed application view with complete verification workspace.
+ */
 const getMentorApplicationById = async (req, res) => {
   try {
     const application = await prisma.mentorApplication.findUnique({
       where: { id: req.params.id },
       include: {
         mentor: {
-          include: { user: { select: { name: true, email: true, dateOfBirth: true, phone: true, profileImage: true } } }
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                dateOfBirth: true,
+                phone: true,
+                profileImage: true,
+                isActive: true,
+                isSuspended: true
+              }
+            },
+            portfolio: true
+          }
         },
-        credentials: true,
+        credentials: {
+          orderBy: { uploadedAt: 'asc' }
+        },
         aiScreening: true
       }
     });
@@ -175,12 +295,12 @@ const getMentorApplicationById = async (req, res) => {
 
 /**
  * PUT /api/admin/mentor-applications/:id/status
- * Updates the application status and propagates to mentor profile if approved.
+ * Updates the application status, verifies credentials, and generates AI portfolio on approval.
  */
 const updateMentorApplicationStatus = async (req, res) => {
   try {
     const { status, reviewNotes, rejectionReason } = req.body;
-    
+
     const validStatuses = ['PENDING', 'AI_SCREENED', 'UNDER_REVIEW', 'APPROVED', 'REJECTED', 'SUSPENDED'];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ status: 'error', message: 'Invalid status.' });
@@ -188,7 +308,14 @@ const updateMentorApplicationStatus = async (req, res) => {
 
     const application = await prisma.mentorApplication.findUnique({
       where: { id: req.params.id },
-      include: { mentor: true }
+      include: {
+        mentor: {
+          include: {
+            user: true
+          }
+        },
+        credentials: true
+      }
     });
 
     if (!application) {
@@ -201,11 +328,11 @@ const updateMentorApplicationStatus = async (req, res) => {
     const isRejection = status === 'REJECTED';
     const isSuspension = status === 'SUSPENDED';
 
-    if (isApproval && current !== 'UNDER_REVIEW') {
-      return res.status(400).json({ status: 'error', message: 'Only UNDER_REVIEW applications can be APPROVED.' });
+    if (isApproval && current !== 'UNDER_REVIEW' && current !== 'AI_SCREENED') {
+      return res.status(400).json({ status: 'error', message: 'Only AI_SCREENED or UNDER_REVIEW applications can be APPROVED.' });
     }
-    if (isRejection && current !== 'UNDER_REVIEW') {
-      return res.status(400).json({ status: 'error', message: 'Only UNDER_REVIEW applications can be REJECTED.' });
+    if (isRejection && current !== 'UNDER_REVIEW' && current !== 'AI_SCREENED') {
+      return res.status(400).json({ status: 'error', message: 'Only AI_SCREENED or UNDER_REVIEW applications can be REJECTED.' });
     }
     if (isSuspension && current !== 'APPROVED') {
       return res.status(400).json({ status: 'error', message: 'Only APPROVED applications can be SUSPENDED.' });
@@ -227,19 +354,57 @@ const updateMentorApplicationStatus = async (req, res) => {
       });
 
       if (isApproval) {
+        // Sync application fields into mentorProfile
+        const profileUpdateData = {
+          status: 'APPROVED',
+          mentorType: 'PROFESSIONAL',
+          verifiedAt: new Date()
+        };
+
+        if (application.professionalSummary) profileUpdateData.bio = application.professionalSummary;
+        if (application.expertise) profileUpdateData.expertise = application.expertise;
+        if (application.experience !== null && application.experience !== undefined) profileUpdateData.experience = application.experience;
+        if (application.teachingExperience !== null && application.teachingExperience !== undefined) profileUpdateData.teachingExperience = application.teachingExperience;
+        if (application.proposedSessionFee !== null && application.proposedSessionFee !== undefined) profileUpdateData.sessionFee = application.proposedSessionFee;
+        if (application.languages) profileUpdateData.language = application.languages;
+        if (application.linkedinUrl) profileUpdateData.linkedinUrl = application.linkedinUrl;
+        if (application.employmentHistory) profileUpdateData.employmentHistory = application.employmentHistory;
+        if (application.teachingExperienceDetails) profileUpdateData.teachingEvidence = application.teachingExperienceDetails;
+
         await tx.mentorProfile.update({
           where: { id: application.mentorId },
-          data: {
-            status: 'APPROVED',
-            mentorType: 'PROFESSIONAL',
-            verifiedAt: new Date()
-          }
+          data: profileUpdateData
         });
+
+        // Mark associated credentials as VERIFIED
+        await tx.credential.updateMany({
+          where: { applicationId: application.id },
+          data: { status: 'VERIFIED' }
+        });
+
+        // Sync topics if provided in application
+        if (application.topics) {
+          const topicNames = application.topics.split(',').map(t => t.trim()).filter(Boolean);
+          for (const tName of topicNames) {
+            let topicRec = await tx.topic.findUnique({ where: { name: tName } });
+            if (!topicRec) {
+              topicRec = await tx.topic.create({ data: { name: tName, category: 'General' } });
+            }
+            const existingMT = await tx.mentorTopic.findUnique({
+              where: { mentorId_topicId: { mentorId: application.mentorId, topicId: topicRec.id } }
+            });
+            if (!existingMT) {
+              await tx.mentorTopic.create({
+                data: { mentorId: application.mentorId, topicId: topicRec.id }
+              });
+            }
+          }
+        }
       } else if (isRejection || isSuspension) {
         await tx.mentorProfile.update({
           where: { id: application.mentorId },
           data: {
-            status: isSuspension ? 'REJECTED' : 'REJECTED' // or leave PENDING/REJECTED. For now, REJECTED.
+            status: 'REJECTED'
           }
         });
       }
@@ -247,9 +412,145 @@ const updateMentorApplicationStatus = async (req, res) => {
       return updated;
     });
 
+    // Post-transaction tasks: Notifications and Portfolio Generation
+    try {
+      if (isApproval) {
+        // Generate AI Portfolio
+        const fullApp = await prisma.mentorApplication.findUnique({
+          where: { id: application.id },
+          include: {
+            mentor: {
+              include: {
+                user: true,
+                topics: { include: { topic: true } }
+              }
+            },
+            credentials: true
+          }
+        });
+
+        const portfolioData = await aiService.generatePortfolio(
+          fullApp,
+          fullApp.mentor,
+          fullApp.mentor.user,
+          fullApp.credentials
+        );
+
+        const portfolioFields = {
+          headline: portfolioData.headline || null,
+          introduction: portfolioData.introduction || null,
+          about: portfolioData.about || null,
+          teachingApproach: portfolioData.teachingApproach || null,
+          mentoringApproach: portfolioData.mentoringApproach || null,
+          experienceSummary: portfolioData.experienceSummary || null,
+          teachingSummary: portfolioData.teachingSummary || null,
+          skills: portfolioData.skills || null,
+          highlights: portfolioData.highlights || null,
+          education: portfolioData.education || null,
+          certifications: portfolioData.certifications || null,
+          achievements: portfolioData.achievements || null,
+          isGenerated: true,
+          generatedAt: new Date()
+        };
+
+        await prisma.mentorPortfolio.upsert({
+          where: { mentorId: application.mentorId },
+          create: {
+            mentorId: application.mentorId,
+            ...portfolioFields
+          },
+          update: {
+            ...portfolioFields,
+            updatedAt: new Date()
+          }
+        });
+
+        await notificationService.createNotification(
+          application.mentor.userId,
+          'GENERAL',
+          'Application Approved & Portfolio Live!',
+          'Congratulations! Your professional mentor application has been approved. Your AI-crafted professional portfolio is now live for students to view.'
+        );
+      } else if (isRejection) {
+        await notificationService.createNotification(
+          application.mentor.userId,
+          'GENERAL',
+          'Mentor Application Update',
+          `Your application has been reviewed. Status: REJECTED. Reason: ${rejectionReason || 'Please review your application feedback.'}`
+        );
+      }
+    } catch (postErr) {
+      console.warn('Post-approval portfolio/notification warning (approval not affected):', postErr.message);
+    }
+
     return res.status(200).json({ status: 'success', message: 'Application status updated.', application: updatedApp });
   } catch (err) {
     return res.status(500).json({ status: 'error', message: 'Failed to update application status.', details: err.message });
+  }
+};
+
+/**
+ * POST /api/admin/mentor-applications/:id/generate-portfolio
+ * Manually trigger or refresh the AI professional portfolio for an approved mentor.
+ */
+const generateMentorPortfolio = async (req, res) => {
+  try {
+    const application = await prisma.mentorApplication.findUnique({
+      where: { id: req.params.id },
+      include: {
+        mentor: {
+          include: {
+            user: true,
+            topics: { include: { topic: true } }
+          }
+        },
+        credentials: true
+      }
+    });
+
+    if (!application) {
+      return res.status(404).json({ status: 'error', message: 'Application not found.' });
+    }
+
+    const portfolioData = await aiService.generatePortfolio(
+      application,
+      application.mentor,
+      application.mentor.user,
+      application.credentials
+    );
+
+    const portfolioFields = {
+      headline: portfolioData.headline || null,
+      introduction: portfolioData.introduction || null,
+      about: portfolioData.about || null,
+      teachingApproach: portfolioData.teachingApproach || null,
+      mentoringApproach: portfolioData.mentoringApproach || null,
+      experienceSummary: portfolioData.experienceSummary || null,
+      teachingSummary: portfolioData.teachingSummary || null,
+      skills: portfolioData.skills || null,
+      highlights: portfolioData.highlights || null,
+      education: portfolioData.education || null,
+      certifications: portfolioData.certifications || null,
+      achievements: portfolioData.achievements || null,
+      isGenerated: true,
+      generatedAt: new Date()
+    };
+
+    const portfolio = await prisma.mentorPortfolio.upsert({
+      where: { mentorId: application.mentorId },
+      create: {
+        mentorId: application.mentorId,
+        ...portfolioFields
+      },
+      update: {
+        ...portfolioFields,
+        updatedAt: new Date()
+      }
+    });
+
+    return res.status(200).json({ status: 'success', message: 'Professional portfolio generated successfully.', portfolio });
+  } catch (err) {
+    return res.status(500).json({ status: 'error', message: 'Failed to generate portfolio.', details: err.message });
   }
 };
 
@@ -260,7 +561,7 @@ const updateMentorApplicationStatus = async (req, res) => {
 const getMentorships = async (req, res) => {
   try {
     const { status } = req.query;
-    
+
     let whereClause = {};
     if (status && status !== 'ALL') {
       whereClause.status = status;
@@ -291,7 +592,7 @@ const toggleUserSuspension = async (req, res) => {
     const { userId } = req.params;
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) return res.status(404).json({ status: 'error', message: 'User not found' });
-    
+
     const updated = await prisma.user.update({
       where: { id: userId },
       data: { isSuspended: !user.isSuspended }
@@ -331,7 +632,11 @@ const getComplaintById = async (req, res) => {
       include: {
         reporter: { select: { id: true, name: true, role: true } },
         reportedUser: { select: { id: true, name: true, role: true } },
-        session: { select: { id: true, scheduledAt: true, duration: true } }
+        session: { select: { id: true, scheduledAt: true, duration: true } },
+        messages: {
+          include: { sender: { select: { name: true, role: true } } },
+          orderBy: { createdAt: 'asc' }
+        }
       }
     });
 
@@ -361,7 +666,7 @@ const updateComplaintStatus = async (req, res) => {
     if (!current) return res.status(404).json({ status: 'error', message: 'Complaint not found' });
 
     const updateData = { status, reviewedById: adminId };
-    
+
     if (resolutionNote) updateData.resolution = resolutionNote;
     if (['RESOLVED', 'DISMISSED'].includes(status)) updateData.resolvedAt = new Date();
 
@@ -369,6 +674,60 @@ const updateComplaintStatus = async (req, res) => {
       where: { id },
       data: updateData
     });
+
+    // Optional refund issuance upon upholding/resolving complaint
+    let refundResult = null;
+    if (status === 'RESOLVED' && req.body.issueRefund && current.sessionId) {
+      try {
+        const sessionWithPayment = await prisma.session.findUnique({
+          where: { id: current.sessionId },
+          include: { payment: { include: { refunds: true } } }
+        });
+        if (sessionWithPayment?.payment && (sessionWithPayment.payment.status === 'PAID' || sessionWithPayment.payment.status === 'PARTIALLY_REFUNDED')) {
+          const refundPolicyService = require('../services/refundPolicyService');
+          const razorpayRefundService = require('../services/razorpayRefundService');
+          const maxRefundable = refundPolicyService.getRemainingRefundableAmount(sessionWithPayment.payment, sessionWithPayment.payment.refunds);
+          const refundAmount = req.body.refundAmount ? Math.min(Number(req.body.refundAmount), maxRefundable) : maxRefundable;
+
+          if (refundAmount > 0) {
+            const crypto = require('crypto');
+            const refundRecord = await prisma.refund.create({
+              data: {
+                refundReference: `ref_${crypto.randomBytes(8).toString('hex')}`,
+                paymentId: sessionWithPayment.payment.id,
+                sessionId: current.sessionId,
+                complaintId: current.id,
+                amount: refundAmount,
+                policyTier: 'COMPLAINT_UPHELD',
+                initiator: 'ADMIN',
+                reason: resolutionNote || 'Refund approved upon resolution of complaint.',
+                adminNotes: resolutionNote || null,
+                status: 'REQUESTED',
+                reviewedById: adminId,
+                reviewedAt: new Date()
+              }
+            });
+
+            refundResult = await razorpayRefundService.executeGatewayRefund(refundRecord.id);
+
+            // Real Transactional Email (Event 11: Complaint Refund Approved)
+            const reporterUser = await prisma.user.findUnique({ where: { id: current.reporterId } });
+            if (reporterUser && refundResult) {
+              const transactionalEmailService = require('../services/transactionalEmailService');
+              await transactionalEmailService.notifyComplaintRefundDecision({
+                refund: refundResult,
+                session: sessionWithPayment,
+                studentUser: reporterUser,
+                decisionTitle: 'Complaint Investigation Resolved & Refund Approved',
+                resolutionNotes: resolutionNote || 'Refund approved upon resolution of complaint.'
+              }).catch(e => console.error('[AdminController] Complaint refund email error:', e.message));
+            }
+          }
+        }
+      } catch (refundErr) {
+        console.error('[AdminController] Complaint refund error:', refundErr.message);
+      }
+    }
 
     // Notify Reporter
     let notifTitle, notifMsg;
@@ -392,6 +751,20 @@ const updateComplaintStatus = async (req, res) => {
         current.id,
         'COMPLAINT'
       );
+
+      // Notify guardian of minor student with authorized non-confidential summary
+      const categoryLabel = current.category ? current.category.replace(/_/g, ' ') : 'General Support';
+      const resolutionText = status === 'RESOLVED' && resolutionNote ? ` Resolution summary: ${resolutionNote}` : '';
+      await guardianService.notifyGuardianEvent(
+        current.reporterId,
+        'COMPLAINT',
+        {
+          title: `Authorized Update: ${notifTitle}`,
+          message: `An authorized status update has been posted regarding a support inquiry (Category: ${categoryLabel}). Current Status: ${status}.${resolutionText} For any safety inquiries or urgent safeguarding concerns, please contact safeguarding@mentorconnect.edu.`,
+          referenceId: current.id,
+          referenceType: 'COMPLAINT'
+        }
+      ).catch(err => console.error('Guardian complaint update error:', err.message));
     }
 
     // Notify Reported User securely
@@ -406,7 +779,7 @@ const updateComplaintStatus = async (req, res) => {
       );
     }
 
-    return res.status(200).json({ status: 'success', data: updated });
+    return res.status(200).json({ status: 'success', data: updated, refund: refundResult });
   } catch (err) {
     return res.status(500).json({ status: 'error', message: err.message });
   }
@@ -418,10 +791,51 @@ const updateComplaintStatus = async (req, res) => {
  */
 const getPeerMentorApplications = async (req, res) => {
   try {
-    const { status } = req.query;
+    const { status, queue } = req.query;
 
     let whereClause = {};
-    if (status && status !== 'ALL') {
+    if (queue === 'ELIGIBLE') {
+      whereClause.OR = [
+        {
+          status: { in: ['AI_SCREENED', 'UNDER_REVIEW', 'PENDING'] },
+          aiScreening: {
+            recommendation: { in: ['STRONG_PASS', 'PASS', 'ELIGIBLE'] }
+          }
+        }
+      ];
+    } else if (queue === 'MANUAL_REVIEW') {
+      whereClause.OR = [
+        {
+          status: 'UNDER_REVIEW',
+          aiScreening: {
+            recommendation: { in: ['NEEDS_REVIEW', 'BORDERLINE', 'NEEDS_MANUAL_REVIEW'] }
+          }
+        },
+        {
+          status: { in: ['PENDING', 'AI_SCREENED'] },
+          aiScreening: {
+            recommendation: { in: ['NEEDS_REVIEW', 'BORDERLINE', 'NEEDS_MANUAL_REVIEW'] }
+          }
+        }
+      ];
+    } else if (queue === 'AUTO_REJECTED') {
+      whereClause.OR = [
+        {
+          status: 'REJECTED',
+          aiScreening: {
+            recommendation: { in: ['REJECT', 'AUTO_REJECTED'] }
+          }
+        },
+        {
+          status: 'REJECTED',
+          rejectionReason: { contains: 'Auto-Rejected' }
+        },
+        {
+          status: 'REJECTED',
+          rejectionReason: { contains: 'objective criteria' }
+        }
+      ];
+    } else if (status && status !== 'ALL') {
       whereClause.status = status;
     }
 
@@ -665,6 +1079,154 @@ const updatePeerMentorApplicationStatus = async (req, res) => {
   }
 };
 
+/**
+ * GET /api/admin/verification-requests
+ */
+const getVerificationRequests = async (req, res) => {
+  try {
+    const { status } = req.query;
+
+    let whereClause = {};
+    if (status && status !== 'ALL') {
+      whereClause.status = status;
+    }
+
+    const requests = await prisma.verificationRequest.findMany({
+      where: whereClause,
+      include: {
+        mentor: {
+          include: { user: { select: { name: true, email: true } } }
+        }
+      },
+      orderBy: { submittedAt: 'desc' }
+    });
+
+    return res.status(200).json({ status: 'success', requests });
+  } catch (err) {
+    return res.status(500).json({ status: 'error', message: 'Failed to fetch verification requests.', details: err.message });
+  }
+};
+
+/**
+ * PUT /api/admin/verification-requests/:id/status
+ */
+const updateVerificationRequestStatus = async (req, res) => {
+  try {
+    const { status, adminNotes, rejectionReason } = req.body;
+
+    const validStatuses = ['PENDING', 'AI_SCREENED', 'UNDER_REVIEW', 'APPROVED', 'REJECTED'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ status: 'error', message: 'Invalid status.' });
+    }
+
+    const request = await prisma.verificationRequest.findUnique({
+      where: { id: req.params.id },
+      include: { mentor: true }
+    });
+
+    if (!request) {
+      return res.status(404).json({ status: 'error', message: 'Verification request not found.' });
+    }
+
+    const updated = await prisma.$transaction(async (tx) => {
+      const updatedReq = await tx.verificationRequest.update({
+        where: { id: request.id },
+        data: {
+          status,
+          adminNotes: adminNotes !== undefined ? adminNotes : request.adminNotes,
+          rejectionReason: rejectionReason !== undefined ? rejectionReason : request.rejectionReason,
+          reviewedAt: (status === 'APPROVED' || status === 'REJECTED') ? new Date() : request.reviewedAt,
+          reviewerId: req.user.id
+        }
+      });
+
+      if (status === 'APPROVED') {
+        // If it's a NEW_CERTIFICATE or NEW_EXPERIENCE, we might create a Credential.
+        if (['NEW_CERTIFICATE', 'NEW_EXPERIENCE', 'NEW_QUALIFICATION'].includes(request.type)) {
+          await tx.credential.create({
+            data: {
+              mentorId: request.mentorId,
+              type: request.type,
+              title: request.title,
+              description: request.description,
+              issuingOrganization: request.institution,
+              issueDate: request.startDate,
+              expiryDate: request.endDate,
+              fileReference: request.evidenceFiles,
+              claimType: request.type,
+              claimDescription: request.title,
+              status: 'VERIFIED',
+              adminVerificationInfo: updatedReq.adminNotes
+            }
+          });
+        } else if (request.type === 'NEW_TEACHING_TOPIC') {
+          // Add to topics
+          let topicRec = await tx.topic.findUnique({ where: { name: request.title } });
+          if (!topicRec) {
+            topicRec = await tx.topic.create({ data: { name: request.title, category: 'General' } });
+          }
+          const existingMT = await tx.mentorTopic.findUnique({
+            where: { mentorId_topicId: { mentorId: request.mentorId, topicId: topicRec.id } }
+          });
+          if (!existingMT) {
+            await tx.mentorTopic.create({
+              data: { mentorId: request.mentorId, topicId: topicRec.id }
+            });
+          }
+        }
+      }
+
+      return updatedReq;
+    });
+
+    return res.status(200).json({ status: 'success', message: 'Verification request updated.', request: updated });
+  } catch (err) {
+    return res.status(500).json({ status: 'error', message: 'Failed to update verification request.', details: err.message });
+  }
+};
+
+/**
+ * PUT /api/admin/mentor-applications/:id/reconsider
+ * Reopens an auto-rejected or flagged professional application for manual review.
+ */
+const reconsiderMentorApplication = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+    const mentorScreeningService = require('../services/mentorScreeningService');
+    const result = await mentorScreeningService.reconsiderApplication({
+      applicationId: id,
+      isPeer: false,
+      adminUser: req.user,
+      reason
+    });
+    return res.status(200).json({ status: 'success', message: 'Application reopened for administrative review.', data: result });
+  } catch (err) {
+    return res.status(500).json({ status: 'error', message: 'Failed to reconsider application.', details: err.message });
+  }
+};
+
+/**
+ * PUT /api/admin/peer-mentor-applications/:id/reconsider
+ * Reopens an auto-rejected or flagged peer application for manual review.
+ */
+const reconsiderPeerMentorApplication = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+    const mentorScreeningService = require('../services/mentorScreeningService');
+    const result = await mentorScreeningService.reconsiderApplication({
+      applicationId: id,
+      isPeer: true,
+      adminUser: req.user,
+      reason
+    });
+    return res.status(200).json({ status: 'success', message: 'Peer application reopened for administrative review.', data: result });
+  } catch (err) {
+    return res.status(500).json({ status: 'error', message: 'Failed to reconsider peer application.', details: err.message });
+  }
+};
+
 module.exports = {
   getDashboardStats,
   getUsers,
@@ -673,11 +1235,16 @@ module.exports = {
   getMentorApplications,
   getMentorApplicationById,
   updateMentorApplicationStatus,
+  reconsiderMentorApplication,
   getComplaints,
   getComplaintById,
   updateComplaintStatus,
   toggleUserSuspension,
   getPeerMentorApplications,
   getPeerMentorApplicationById,
-  updatePeerMentorApplicationStatus
+  updatePeerMentorApplicationStatus,
+  reconsiderPeerMentorApplication,
+  generateMentorPortfolio,
+  getVerificationRequests,
+  updateVerificationRequestStatus
 };

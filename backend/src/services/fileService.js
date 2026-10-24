@@ -19,7 +19,12 @@ if (process.env.CLOUDINARY_CLOUD_NAME) {
 const uploadToCloudinary = (fileBuffer, folderPath, originalName, mimeType) => {
   return new Promise((resolve, reject) => {
     if (!process.env.CLOUDINARY_CLOUD_NAME) {
-      return reject(new Error("Cloudinary credentials are not configured in backend environment."));
+      // Development fallback when Cloudinary is not configured
+      const base64Data = `data:${mimeType || 'image/jpeg'};base64,${fileBuffer.toString('base64')}`;
+      return resolve({
+        public_id: base64Data,
+        secure_url: base64Data
+      });
     }
 
     const uploadStream = cloudinary.uploader.upload_stream(
@@ -105,8 +110,13 @@ const deleteFileAsset = async (assetId, ownerId) => {
  * Generates secure, short-lived download/view URL (if applicable, else standard secure URL)
  */
 const generateSecureUrl = (storageKey, mimeType = '') => {
-  if (!process.env.CLOUDINARY_CLOUD_NAME) return null;
-  const isRaw = !mimeType.startsWith('image/') && !mimeType.startsWith('video/');
+  if (storageKey.startsWith('data:')) {
+    return storageKey; // Already a Data URI
+  }
+  const isRaw = mimeType && !mimeType.startsWith('image/') && !mimeType.startsWith('video/');
+  if (!process.env.CLOUDINARY_CLOUD_NAME) {
+    return `https://res.cloudinary.com/mentorconnect-dev/${isRaw ? 'raw' : 'image'}/upload/${storageKey}`;
+  }
   return cloudinary.url(storageKey, { secure: true, resource_type: isRaw ? 'raw' : 'image' });
 };
 

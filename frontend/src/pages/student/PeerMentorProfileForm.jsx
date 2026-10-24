@@ -74,9 +74,9 @@ export default function PeerMentorProfileForm() {
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           <span style={{ 
             fontSize: '0.8rem', padding: '0.3rem 0.75rem', borderRadius: '16px', fontWeight: 600,
-            background: isReady ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-            color: isReady ? '#10b981' : '#f59e0b',
-            border: isReady ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(245, 158, 11, 0.3)'
+            background: isReady ? 'var(--success-subtle)' : 'var(--warning-subtle)',
+            color: isReady ? 'var(--success)' : 'var(--warning)',
+            border: isReady ? '1px solid var(--success)' : '1px solid var(--warning)'
           }}>
             {isReady ? '✓ Discoverable' : '⚠ Not Ready'}
           </span>
@@ -84,15 +84,15 @@ export default function PeerMentorProfileForm() {
       </div>
 
       {!isReady && (
-        <div className="glass-card" style={{ padding: '1.25rem', marginBottom: '1.5rem', background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
-          <p style={{ color: '#f59e0b', margin: 0, fontSize: '0.9rem' }}>
+        <div className="glass-card" style={{ padding: '1.25rem', marginBottom: '1.5rem', background: 'var(--warning-subtle)', border: '1px solid var(--warning)' }}>
+          <p style={{ color: 'var(--warning)', margin: 0, fontSize: '0.9rem' }}>
             <strong>Complete your profile to become discoverable.</strong> You need: bio, expertise, at least one topic, session fee, and at least one availability slot.
           </p>
         </div>
       )}
 
-      {success && <div style={{ color: '#10b981', marginBottom: '1rem', fontWeight: 'bold' }}>{success}</div>}
-      {error && <div style={{ color: '#ef4444', marginBottom: '1rem' }}>{error}</div>}
+      {success && <div style={{ color: 'var(--success)', marginBottom: '1rem', fontWeight: 'bold' }}>{success}</div>}
+      {error && <div style={{ color: 'var(--error)', marginBottom: '1rem' }}>{error}</div>}
 
       <form onSubmit={handleSubmit} className="glass-card" style={{ padding: '2rem' }}>
         <div style={{ display: 'grid', gap: '1.5rem' }}>
@@ -103,7 +103,8 @@ export default function PeerMentorProfileForm() {
               onChange={e => setForm({ ...form, bio: e.target.value })}
               rows={4}
               placeholder="Tell learners about yourself and your mentoring approach..."
-              style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white', resize: 'vertical' }}
+              className="form-input"
+              style={{ resize: 'vertical' }}
             />
           </div>
           <div>
@@ -112,7 +113,7 @@ export default function PeerMentorProfileForm() {
               value={form.expertise}
               onChange={e => setForm({ ...form, expertise: e.target.value })}
               placeholder="e.g., JavaScript, React, Data Science"
-              style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
+              className="form-input"
             />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
@@ -123,7 +124,7 @@ export default function PeerMentorProfileForm() {
                 value={form.experience}
                 onChange={e => setForm({ ...form, experience: e.target.value })}
                 min="0"
-                style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
+                className="form-input"
               />
             </div>
             <div>
@@ -132,11 +133,11 @@ export default function PeerMentorProfileForm() {
                 value={form.language}
                 onChange={e => setForm({ ...form, language: e.target.value })}
                 placeholder="e.g., English"
-                style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
+                className="form-input"
               />
             </div>
             <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Session Fee ($/hr)</label>
+              <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Session Fee (₹/hr)</label>
               <input
                 type="number"
                 value={form.sessionFee}
@@ -144,7 +145,7 @@ export default function PeerMentorProfileForm() {
                 min="0"
                 step="0.01"
                 placeholder="0 for free"
-                style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
+                className="form-input"
               />
             </div>
           </div>
@@ -154,7 +155,7 @@ export default function PeerMentorProfileForm() {
               value={form.topics}
               onChange={e => setForm({ ...form, topics: e.target.value })}
               placeholder="e.g., Web Development, Python, Machine Learning"
-              style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
+              className="form-input"
             />
           </div>
         </div>

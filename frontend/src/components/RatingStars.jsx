@@ -6,7 +6,7 @@ export default function RatingStars({ rating, setRating, readOnly = false }) {
           key={star} 
           onClick={() => !readOnly && setRating && setRating(star)}
           style={{ 
-            color: star <= rating ? '#eab308' : 'rgba(255, 255, 255, 0.2)',
+            color: star <= rating ? '#eab308' : 'var(--border-subtle)',
             transition: 'color 0.2s ease'
           }}
           title={`${star} Star${star > 1 ? 's' : ''}`}

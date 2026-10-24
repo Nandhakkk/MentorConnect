@@ -8,6 +8,7 @@ export default function Register() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
+  const [goal, setGoal] = useState('');
   const [role, setRole] = useState('STUDENT'); // 'STUDENT' or 'MENTOR'
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -36,7 +37,7 @@ export default function Register() {
 
     setSubmitting(true);
     try {
-      const regUser = await register(name, email, password, role, dateOfBirth || undefined);
+      const regUser = await register(name, email, password, role, dateOfBirth || undefined, goal.trim() || undefined);
       navigate(getDashboardForRole(regUser.role));
     } catch (err) {
       setError(err.message || 'Registration failed. Please try again.');
@@ -77,7 +78,7 @@ export default function Register() {
         {error && (
           <div style={{
             backgroundColor: 'var(--error-bg)',
-            border: '1px solid rgba(239, 68, 68, 0.3)',
+            border: '1px solid var(--error-border)',
             borderRadius: 'var(--radius-md)',
             padding: '0.75rem 1rem',
             marginBottom: '1.5rem',
@@ -151,6 +152,53 @@ export default function Register() {
                 disabled={submitting}
                 max={new Date().toISOString().split("T")[0]}
                 id="register-dob"
+              />
+              {dateOfBirth && (() => {
+                const dob = new Date(dateOfBirth);
+                if (isNaN(dob.getTime())) return null;
+                const today = new Date();
+                let age = today.getFullYear() - dob.getFullYear();
+                const m = today.getMonth() - dob.getMonth();
+                if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
+                return (
+                  <div style={{
+                    marginTop: '0.5rem',
+                    padding: '0.65rem 0.85rem',
+                    borderRadius: 'var(--radius-sm)',
+                    fontSize: '0.8rem',
+                    lineHeight: 1.4,
+                    background: age < 18 ? 'var(--info-bg)' : 'var(--success-bg)',
+                    border: `1px solid ${age < 18 ? 'var(--info-border)' : 'var(--success-border)'}`,
+                    color: 'var(--text-primary)'
+                  }} id="age-preview-badge">
+                    {age < 18 ? (
+                      <span>
+                        🛡️ <strong>Learner Under 18 ({age} years old):</strong> You will be guided through a student onboarding form with school subjects and Guardian OTP verification.
+                      </span>
+                    ) : (
+                      <span>
+                        🎓 <strong>Adult Learner ({age} years old):</strong> You will proceed through standard higher education, skills, and career goals onboarding.
+                      </span>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
+          {role === 'STUDENT' && (
+            <div>
+              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem', color: 'var(--text-primary)' }}>
+                Primary Learning Goal / Career Goal <span style={{ fontWeight: 400, color: 'var(--text-secondary)' }}>(Optional)</span>
+              </label>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="e.g. Become a Full Stack Developer"
+                value={goal}
+                onChange={(e) => setGoal(e.target.value)}
+                disabled={submitting}
+                id="register-goal"
               />
             </div>
           )}

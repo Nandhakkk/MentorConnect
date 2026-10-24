@@ -20,7 +20,7 @@ export async function fetchAdminDashboardStats() {
 export async function fetchAdminUsers(role = 'ALL', search = '') {
   let url = `${API_BASE_URL}/admin/users?role=${role}`;
   if (search) url += `&search=${encodeURIComponent(search)}`;
-  
+
   const response = await fetch(url, {
     headers: getAuthHeaders(),
   });
@@ -29,8 +29,11 @@ export async function fetchAdminUsers(role = 'ALL', search = '') {
   return data.users;
 }
 
-export async function fetchAdminMentors() {
-  const response = await fetch(`${API_BASE_URL}/admin/mentors`, {
+export async function fetchAdminMentors(type = '') {
+  let url = `${API_BASE_URL}/admin/mentors`;
+  if (type) url += `?type=${type}`;
+
+  const response = await fetch(url, {
     headers: getAuthHeaders(),
   });
   const data = await response.json();
@@ -38,11 +41,13 @@ export async function fetchAdminMentors() {
   return data.mentors;
 }
 
-export async function fetchMentorApplications(status = 'ALL') {
+export async function fetchMentorApplications(status = 'ALL', queue = '') {
   let url = `${API_BASE_URL}/admin/mentor-applications`;
-  if (status && status !== 'ALL') {
-    url += `?status=${status}`;
-  }
+  const params = [];
+  if (queue) params.push(`queue=${encodeURIComponent(queue)}`);
+  else if (status && status !== 'ALL') params.push(`status=${encodeURIComponent(status)}`);
+  if (params.length > 0) url += `?${params.join('&')}`;
+
   const response = await fetch(url, { headers: getAuthHeaders() });
   const data = await response.json();
   if (!response.ok) throw new Error(data.message || 'Failed to fetch mentor applications');
@@ -67,6 +72,17 @@ export async function updateMentorApplicationStatus(id, updateData) {
   return data.application;
 }
 
+export async function reconsiderMentorApplication(id, reason = '') {
+  const response = await fetch(`${API_BASE_URL}/admin/mentor-applications/${id}/reconsider`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ reason })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to reconsider application');
+  return data;
+}
+
 export async function fetchAdminMentorships(status = 'ALL') {
   let url = `${API_BASE_URL}/admin/mentorships?status=${status}`;
   const response = await fetch(url, {
@@ -77,11 +93,13 @@ export async function fetchAdminMentorships(status = 'ALL') {
   return data.mentorships;
 }
 
-export async function fetchPeerMentorApplications(status = 'ALL') {
+export async function fetchPeerMentorApplications(status = 'ALL', queue = '') {
   let url = `${API_BASE_URL}/admin/peer-mentor-applications`;
-  if (status && status !== 'ALL') {
-    url += `?status=${status}`;
-  }
+  const params = [];
+  if (queue) params.push(`queue=${encodeURIComponent(queue)}`);
+  else if (status && status !== 'ALL') params.push(`status=${encodeURIComponent(status)}`);
+  if (params.length > 0) url += `?${params.join('&')}`;
+
   const response = await fetch(url, { headers: getAuthHeaders() });
   const data = await response.json();
   if (!response.ok) throw new Error(data.message || 'Failed to fetch peer mentor applications');
@@ -104,4 +122,47 @@ export async function updatePeerMentorApplicationStatus(id, updateData) {
   const data = await response.json();
   if (!response.ok) throw new Error(data.message || 'Failed to update peer mentor application status');
   return data.application;
+}
+
+export async function reconsiderPeerMentorApplication(id, reason = '') {
+  const response = await fetch(`${API_BASE_URL}/admin/peer-mentor-applications/${id}/reconsider`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ reason })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to reconsider peer application');
+  return data;
+}
+
+export async function generateMentorPortfolio(id) {
+  const response = await fetch(`${API_BASE_URL}/admin/mentor-applications/${id}/generate-portfolio`, {
+    method: 'POST',
+    headers: getAuthHeaders()
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to generate portfolio');
+  return data.portfolio;
+}
+
+export async function fetchVerificationRequests(status = 'ALL') {
+  let url = `${API_BASE_URL}/admin/verification-requests`;
+  if (status && status !== 'ALL') {
+    url += `?status=${status}`;
+  }
+  const response = await fetch(url, { headers: getAuthHeaders() });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to fetch verification requests');
+  return data.requests;
+}
+
+export async function updateVerificationRequestStatus(id, updateData) {
+  const response = await fetch(`${API_BASE_URL}/admin/verification-requests/${id}/status`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(updateData)
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Failed to update verification request status');
+  return data.request;
 }

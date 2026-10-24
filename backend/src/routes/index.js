@@ -22,6 +22,7 @@ const reviewRoutes = require('./reviewRoutes');
 const complaintRoutes = require('./complaintRoutes');
 const peerMentorRoutes = require('./peerMentorRoutes');
 const financeRoutes = require('./financeRoutes');
+const refundRoutes = require('./refundRoutes');
 // Mount sub-routers
 router.use('/health', healthRoutes);
 router.use('/admin', adminRoutes);
@@ -44,5 +45,6 @@ router.use('/reviews', reviewRoutes);
 router.use('/complaints', complaintRoutes);
 router.use('/peer-mentor', peerMentorRoutes);
 router.use('/finance', financeRoutes);
+router.use('/refunds', refundRoutes);
 
 module.exports = router;

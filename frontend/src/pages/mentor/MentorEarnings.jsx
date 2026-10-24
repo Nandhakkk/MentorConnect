@@ -1,3 +1,4 @@
+import { formatCurrency } from '../../utils/currency';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { fetchMentorEarnings } from '../../services/financeService';
@@ -27,13 +28,13 @@ export default function MentorEarnings() {
 
   const getStatusBadge = (status) => {
     const styles = {
-      ELIGIBLE: { bg: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.3)' },
-      PROCESSING: { bg: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.3)' },
-      PAID: { bg: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)' },
-      FAILED: { bg: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)' },
-      CANCELLED: { bg: 'rgba(107, 114, 128, 0.15)', color: '#9ca3af', border: '1px solid rgba(107, 114, 128, 0.3)' }
+      ELIGIBLE: { bg: 'var(--info-subtle)', color: 'var(--info)', border: '1px solid var(--info)' },
+      PROCESSING: { bg: 'var(--warning-subtle)', color: 'var(--warning)', border: '1px solid var(--warning)' },
+      PAID: { bg: 'var(--success-subtle)', color: 'var(--success)', border: '1px solid var(--success)' },
+      FAILED: { bg: 'var(--error-subtle)', color: 'var(--error)', border: '1px solid var(--error)' },
+      CANCELLED: { bg: 'var(--bg-surface-elevated)', color: 'var(--text-muted)', border: '1px solid var(--border-subtle)' }
     };
-    const style = styles[status] || { bg: 'transparent', color: 'white', border: 'none' };
+    const style = styles[status] || { bg: 'var(--bg-surface-elevated)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)' };
     return (
       <span style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem', borderRadius: '16px', fontWeight: 600, background: style.bg, color: style.color, border: style.border }}>
         {status}
@@ -52,25 +53,25 @@ export default function MentorEarnings() {
         </div>
       </div>
 
-      {error && <div style={{ color: '#ef4444', marginBottom: '1rem' }}>{error}</div>}
+      {error && <div style={{ color: 'var(--error)', marginBottom: '1rem' }}>{error}</div>}
 
       {summary && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
-          <div className="glass-card" style={{ padding: '1.5rem', textAlign: 'center', borderTop: '4px solid #10b981' }}>
+          <div className="glass-card" style={{ padding: '1.5rem', textAlign: 'center', borderTop: '4px solid var(--success)' }}>
             <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Net Earned</div>
-            <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-primary)' }}>₹{summary.totalNet}</div>
+            <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-primary)' }}>{formatCurrency(summary.totalNet)}</div>
           </div>
-          <div className="glass-card" style={{ padding: '1.5rem', textAlign: 'center', borderTop: '4px solid #3b82f6' }}>
+          <div className="glass-card" style={{ padding: '1.5rem', textAlign: 'center', borderTop: '4px solid var(--accent-primary)' }}>
             <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Eligible (Next Payout)</div>
-            <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-primary)' }}>₹{summary.eligible}</div>
+            <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-primary)' }}>{formatCurrency(summary.eligible)}</div>
           </div>
-          <div className="glass-card" style={{ padding: '1.5rem', textAlign: 'center', borderTop: '4px solid #f59e0b' }}>
+          <div className="glass-card" style={{ padding: '1.5rem', textAlign: 'center', borderTop: '4px solid var(--warning)' }}>
             <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Processing</div>
-            <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-primary)' }}>₹{summary.processing}</div>
+            <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-primary)' }}>{formatCurrency(summary.processing)}</div>
           </div>
-          <div className="glass-card" style={{ padding: '1.5rem', textAlign: 'center', borderTop: '4px solid #10b981' }}>
+          <div className="glass-card" style={{ padding: '1.5rem', textAlign: 'center', borderTop: '4px solid var(--success)' }}>
             <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Paid Out</div>
-            <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-primary)' }}>₹{summary.paid}</div>
+            <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-primary)' }}>{formatCurrency(summary.paid)}</div>
           </div>
         </div>
       )}
@@ -104,9 +105,9 @@ export default function MentorEarnings() {
                       {payout.payment?.session?.topic || 'Session'}
                     </div>
                   </td>
-                  <td>₹{payout.grossAmount}</td>
-                  <td style={{ color: '#ef4444' }}>-₹{payout.platformFee}</td>
-                  <td style={{ color: '#10b981', fontWeight: 600 }}>₹{payout.netAmount}</td>
+                  <td>{formatCurrency(payout.grossAmount)}</td>
+                  <td style={{ color: 'var(--error)' }}>-{formatCurrency(payout.platformFee)}</td>
+                  <td style={{ color: 'var(--success)', fontWeight: 600 }}>{formatCurrency(payout.netAmount)}</td>
                   <td>{getStatusBadge(payout.status)}</td>
                   <td style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontFamily: 'monospace' }}>
                     {payout.providerId || '-'}

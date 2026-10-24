@@ -423,7 +423,7 @@
   scrollbar-width: none;
 }
 .ai-composer-input::placeholder {
-  color: #64748b;
+  color: #94a3b8;
 }
 
 .ai-composer-actions {
@@ -434,7 +434,7 @@
 }
 .ai-composer-hint {
   font-size: 0.8rem;
-  color: #64748b;
+  color: #94a3b8;
 }
 
 .ai-composer-send {

@@ -43,6 +43,7 @@ enum SessionStatus {
   SCHEDULED
   COMPLETED
   CANCELLED
+  MISSED
 }
 
 enum MentorStatus {
@@ -62,6 +63,7 @@ enum PaymentStatus {
   PAID
   FAILED
   REFUNDED
+  PARTIALLY_REFUNDED
   CANCELLED
 }
 
@@ -72,6 +74,33 @@ enum PayoutStatus {
   PAID
   FAILED
   CANCELLED
+}
+
+enum RefundStatus {
+  REQUESTED
+  PENDING_GATEWAY
+  PROCESSED
+  FAILED
+  REJECTED
+  CANCELLED
+}
+
+enum RefundInitiator {
+  STUDENT
+  MENTOR
+  ADMIN
+  SYSTEM
+}
+
+enum RefundPolicyTier {
+  STUDENT_EARLY_100
+  STUDENT_STANDARD_50
+  STUDENT_LATE_EXCEPTIONAL
+  MENTOR_CANCELLATION_100
+  MENTOR_NO_SHOW_100
+  BOOKING_FAILURE_100
+  COMPLAINT_UPHELD
+  ADMIN_MANUAL
 }
 
 enum AssignmentStatus {
@@ -109,6 +138,7 @@ enum NotificationType {
   ASSIGNMENT
   COMPLAINT
   GENERAL
+  REFUND
 }
 
 enum MentorAppStatus {
@@ -143,6 +173,22 @@ enum AIRecommendationStatus {
   REJECTED
 }
 
+enum VerificationRequestType {
+  NEW_CERTIFICATE
+  NEW_EXPERIENCE
+  NEW_TEACHING_TOPIC
+  NEW_QUALIFICATION
+  OTHER_PROFESSIONAL_CLAIM
+}
+
+enum VerificationRequestStatus {
+  PENDING
+  AI_SCREENED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+}
+
 // ==========================================
 // MODELS
 // ==========================================
@@ -164,6 +210,15 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Account Email Verification
+  isEmailVerified    Boolean   @default(true)
+  emailVerifiedAt    DateTime? @default(now())
+  pendingEmail       String?
+  emailOtpHash       String?
+  emailOtpExpiry     DateTime?
+  emailOtpAttempts   Int       @default(0)
+  lastEmailOtpSentAt DateTime?
+
   // 1-to-1 optional profiles depending on user role
   studentProfile StudentProfile?
   mentorProfile  MentorProfile?
@@ -179,6 +234,9 @@ model User {
   notifications       Notification[]
   complaintsSubmitted Complaint[]    @relation("Reporter")
   complaintsReceived  Complaint[]    @relation("ReportedUser")
+  complaintMessages   ComplaintMessage[]
+  refundRequests      Refund[]       @relation("RefundRequests")
+  refundReviews       Refund[]       @relation("RefundReviews")
 }
 
 /// Profile details specific to users with the STUDENT role
@@ -190,6 +248,11 @@ model StudentProfile {
   skills     String? @db.Text
   interests  String? @db.Text
   careerGoal String?
+
+  // Minor-specific education details
+  gradeLevel       String?
+  schoolName       String?
+  favoriteSubjects String?
 
   preferredLearningStyle String?
   preferredLanguage      String?
@@ -245,6 +308,8 @@ model MentorProfile {
   credentials      Credential[]
   payouts          PayoutRecord[]
   assignments      Assignment[]            @relation("MentorAssignments")
+  portfolio        MentorPortfolio?
+  verificationRequests VerificationRequest[]
 }
 
 /// Goal set by a student to track mentorship progress
@@ -321,6 +386,7 @@ model Session {
   reviews     Review[]
   assignments Assignment[]
   complaints  Complaint[]
+  refunds     Refund[]
 
   @@index([mentorshipId])
 }
@@ -361,22 +427,69 @@ model MentorAvailability {
 // ==========================================
 
 model Guardian {
-  id                 String  @id @default(uuid())
-  userId             String // The user who is the guardian
-  minorStudentId     String // The learner who is being guarded
-  relationship       String // e.g., Parent, Legal Guardian
+  id                 String    @id @default(uuid())
+  name               String?   // Guardian full name
+  userId             String?   // Optional: if linked to a registered user account
+  minorStudentId     String    // The learner who is being guarded
+  relationship       String    // e.g., Parent, Legal Guardian, Other
   phone              String?
   email              String?
-  isVerified         Boolean @default(false)
-  isMonitoringActive Boolean @default(true)
+  isVerified         Boolean   @default(false)
+  emailVerifiedAt    DateTime?
+  phoneVerifiedAt    DateTime?
+  isMonitoringActive Boolean   @default(true)
+
+  // Verification & Security
+  verificationTokenHash   String?
+  verificationTokenExpiry DateTime?
+  verificationSentAt      DateTime?
+
+  // OTP Verification
+  otpHash                 String?
+  otpExpiry               DateTime?
+  otpAttempts             Int       @default(0)
+  otpMethod               String?   // EMAIL or PHONE
+  lastOtpSentAt           DateTime?
+  verificationMethod      String?   // EMAIL, PHONE, or MAGIC_LINK
+
+  // Consent
+  consentStatus        String    @default("PENDING") // PENDING, GRANTED, REVOKED
+  consentTimestamp     DateTime?
+  consentPolicyVersion String?   @default("1.0")
+
+  // Notification Preferences
+  notificationPreferences Json?
+
+  // Revocation
+  accessRevokedAt     DateTime?
+  accessRevokedReason String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  guardianUser User @relation("GuardianUsers", fields: [userId], references: [id], onDelete: Cascade)
-  learner      User @relation("LearnerGuardians", fields: [minorStudentId], references: [id], onDelete: Cascade)
+  guardianUser User? @relation("GuardianUsers", fields: [userId], references: [id], onDelete: SetNull)
+  learner      User  @relation("LearnerGuardians", fields: [minorStudentId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, minorStudentId])
+  accessTokens  GuardianAccessToken[]
+  notifications Notification[]
+
+  @@index([minorStudentId])
+  @@index([email])
+}
+
+model GuardianAccessToken {
+  id         String    @id @default(uuid())
+  guardianId String
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  lastUsedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  guardian Guardian @relation(fields: [guardianId], references: [id], onDelete: Cascade)
+
+  @@index([guardianId])
+  @@index([tokenHash])
 }
 
 model MentorApplication {
@@ -390,6 +503,16 @@ model MentorApplication {
   linkedinUrl         String?
   languages           String?
   proposedSessionFee  Float?
+
+  // Extended professional fields & claims
+  employmentHistory          String? @db.Text
+  teachingExperienceDetails  String? @db.Text
+  education                  String? @db.Text
+  skills                     String? @db.Text
+  certifications             String? @db.Text
+  achievements               String? @db.Text
+  topics                     String? @db.Text
+  otherInfo                  String? @db.Text
 
   rejectionReason String? @db.Text
   reviewNotes     String? @db.Text
@@ -455,6 +578,16 @@ model Credential {
 
   fileReference String?
 
+  // Claim ↔ Evidence Linkage
+  claimType            String?   // e.g., TEACHING_EXPERIENCE, EMPLOYMENT_HISTORY, EDUCATION, CERTIFICATION, ACHIEVEMENT, OTHER
+  claimDescription     String?   // Specific claim being supported
+
+  // AI Verification details for this document & claim
+  aiVerificationResult String?   // SUPPORTED, PARTIALLY_SUPPORTED, UNSUPPORTED, UNABLE_TO_VERIFY
+  aiConfidence         String?   // HIGH, MEDIUM, LOW
+  aiReasoning          String?   @db.Text
+  aiEvidenceFound      String?   @db.Text
+
   status                CredentialStatus @default(PENDING)
   adminVerificationInfo String?          @db.Text
 
@@ -463,6 +596,28 @@ model Credential {
 
   mentor      MentorProfile      @relation(fields: [mentorId], references: [id], onDelete: Cascade)
   application MentorApplication? @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+}
+
+model MentorPortfolio {
+  id                 String   @id @default(uuid())
+  mentorId           String   @unique
+  headline           String?
+  introduction       String?  @db.Text
+  about              String?  @db.Text
+  teachingApproach   String?  @db.Text
+  mentoringApproach  String?  @db.Text
+  experienceSummary  String?  @db.Text
+  teachingSummary    String?  @db.Text
+  skills             Json?
+  highlights         Json?
+  education          Json?
+  certifications     Json?
+  achievements       Json?
+  isGenerated        Boolean  @default(true)
+  generatedAt        DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  mentor             MentorProfile @relation(fields: [mentorId], references: [id], onDelete: Cascade)
 }
 
 model Topic {
@@ -506,6 +661,7 @@ model Payment {
   student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
   session Session        @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   payout  PayoutRecord?
+  refunds Refund[]
 }
 
 model PayoutRecord {
@@ -597,9 +753,21 @@ model Notification {
   referenceId   String?
   referenceType String?
 
+  channel        String?   @default("IN_APP") // IN_APP, EMAIL, SMS
+  deliveryStatus String?   @default("DELIVERED") // DELIVERED, SENT, FAILED, PENDING
+  recipientEmail String?
+  guardianId     String?
+  sentAt         DateTime?
+  errorMessage   String?
+
   createdAt DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  guardian Guardian? @relation(fields: [guardianId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([guardianId])
+  @@index([referenceId])
 }
 
 model Complaint {
@@ -619,6 +787,9 @@ model Complaint {
   resolution   String? @db.Text
   reviewedById String?
 
+  reportedUserResponse    String? @db.Text
+  reportedUserRespondedAt DateTime?
+
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
   resolvedAt DateTime?
@@ -626,6 +797,22 @@ model Complaint {
   reporter     User     @relation("Reporter", fields: [reporterId], references: [id], onDelete: Cascade)
   reportedUser User?    @relation("ReportedUser", fields: [reportedUserId], references: [id], onDelete: Cascade)
   session      Session? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  messages     ComplaintMessage[]
+  refunds      Refund[]
+}
+
+model ComplaintMessage {
+  id          String   @id @default(uuid())
+  complaintId String
+  senderId    String
+  content     String   @db.Text
+  createdAt   DateTime @default(now())
+
+  complaint   Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  sender      User      @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([complaintId])
+  @@index([senderId])
 }
 
 model FileAsset {
@@ -651,4 +838,87 @@ model AIRecommendation {
   updatedAt DateTime @updatedAt
 
   student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+}
+
+model VerificationRequest {
+  id               String                    @id @default(uuid())
+  mentorId         String
+  type             VerificationRequestType
+  status           VerificationRequestStatus @default(PENDING)
+
+  // Data for the request
+  title            String?
+  description      String?                   @db.Text
+  institution      String?
+  startDate        DateTime?
+  endDate          DateTime?
+
+  // Uploaded evidence or links
+  evidenceFiles    String?                   @db.Text
+  evidenceLinks    String?                   @db.Text
+
+  // AI Verification details
+  aiResult         String?
+  aiConfidence     String?
+  aiReasoning      String?                   @db.Text
+  aiEvidenceFound  String?                   @db.Text
+
+  // Admin review
+  adminNotes       String?                   @db.Text
+  rejectionReason  String?                   @db.Text
+  reviewerId       String?
+
+  submittedAt      DateTime                  @default(now())
+  reviewedAt       DateTime?
+  updatedAt        DateTime                  @updatedAt
+
+  mentor           MentorProfile             @relation(fields: [mentorId], references: [id], onDelete: Cascade)
+}
+
+model Refund {
+  id                String           @id @default(uuid())
+  refundReference   String           @unique
+  paymentId         String
+  sessionId         String?
+  complaintId       String?
+
+  amount            Float
+  currency          String           @default("INR")
+  status            RefundStatus     @default(REQUESTED)
+  policyTier        RefundPolicyTier
+  initiator         RefundInitiator
+
+  reason            String           @db.Text
+  studentNotes      String?          @db.Text
+  adminNotes        String?          @db.Text
+  failureReason     String?          @db.Text
+
+  // Razorpay Gateway Details
+  razorpayRefundId  String?          @unique
+  razorpayPaymentId String?
+  idempotencyKey    String?          @unique
+  gatewayResponse   Json?
+
+  // Actor References
+  requestedById     String?
+  reviewedById      String?
+
+  // Timestamps
+  requestedAt       DateTime         @default(now())
+  reviewedAt        DateTime?
+  processedAt       DateTime?
+  failedAt          DateTime?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  payment           Payment          @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  session           Session?         @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  complaint         Complaint?       @relation(fields: [complaintId], references: [id], onDelete: SetNull)
+  requestedBy       User?            @relation("RefundRequests", fields: [requestedById], references: [id], onDelete: SetNull)
+  reviewedBy        User?            @relation("RefundReviews", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([paymentId])
+  @@index([sessionId])
+  @@index([status])
+  @@index([refundReference])
 }

@@ -25,7 +25,12 @@ export async function createApplication(dataPayload) {
     body: JSON.stringify(dataPayload)
   });
   const data = await response.json();
-  if (!response.ok) throw new Error(data.message || 'Failed to create application');
+  if (!response.ok) {
+    const err = new Error(data.message || 'Failed to create application');
+    err.reasons = data.reasons;
+    err.criteria = data.criteria;
+    throw err;
+  }
   return data.data;
 }
 

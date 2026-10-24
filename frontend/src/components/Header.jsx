@@ -1,6 +1,4 @@
 import { useAuth } from '../context/AuthContext';
-import NotificationBell from './NotificationBell';
-import ProfileMenu from './ProfileMenu';
 
 export default function Header() {
   const { user, logout } = useAuth();
@@ -8,8 +6,7 @@ export default function Header() {
     <div className="app-header">
       <span className="portal-label">{user?.role?.toLowerCase()} workspace</span>
       <div className="header-actions">
-        <NotificationBell />
-        <ProfileMenu />
+        {/* Actions moved to global top bar */}
       </div>
     </div>
   );
